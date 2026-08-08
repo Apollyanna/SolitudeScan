@@ -4750,3 +4750,31 @@ SWIPE NO HERO BANNER (passar com o dedo)
     }
   }, { passive: true });
 })();
+
+/* ==========================================
+DOTS DO HERO (indicadores de carrossel)
+========================================== */
+function atualizarDotsHero() {
+  const section = document.getElementById('heroBannerSection');
+  if (!section || heroObras.length === 0) return;
+
+  let dots = document.getElementById('heroDots');
+  if (!dots) {
+    dots = document.createElement('div');
+    dots.id = 'heroDots';
+    dots.style.cssText = 'display:flex; gap:6px; justify-content:center; padding:10px 0 0;';
+    section.parentNode.insertBefore(dots, section.nextSibling);
+  }
+
+  const total = heroObras.length;
+  const atual = ((heroIndice - 1) % total + total) % total;
+
+  dots.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('span');
+    d.style.cssText = 'width:8px; height:8px; border-radius:50%; background:' +
+      (i === atual ? 'var(--primaria)' : 'var(--borda)') + '; transition:all .3s;';
+    dots.appendChild(d);
+  }
+}
+setInterval(atualizarDotsHero, 800);
