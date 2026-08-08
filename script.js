@@ -4723,3 +4723,30 @@ document.addEventListener("DOMContentLoaded", () => {
 setInterval(verificarVipAtivo, 3600000);
 
 // === FIM DA PARTE 9 (ARQUIVO COMPLETO) ===
+
+/* ==========================================
+SWIPE NO HERO BANNER (passar com o dedo)
+========================================== */
+(function () {
+  let xInicio = null;
+
+  document.addEventListener('touchstart', function (e) {
+    const sec = document.getElementById('heroBannerSection');
+    if (!sec || !sec.contains(e.target)) return;
+    xInicio = e.touches[0].clientX;
+  }, { passive: true });
+
+  document.addEventListener('touchend', function (e) {
+    if (xInicio === null) return;
+    const dx = e.changedTouches[0].clientX - xInicio;
+    xInicio = null;
+    if (Math.abs(dx) < 40) return;
+
+    if (dx < 0) {
+      rotacionarHero(); // swipe pra esquerda = próxima
+    } else {
+      heroIndice = Math.max(0, heroIndice - 2);
+      rotacionarHero(); // swipe pra direita = anterior
+    }
+  }, { passive: true });
+})();
