@@ -1573,3 +1573,22 @@ html.light .bottom-nav {
   z-index: 9999;
   animation: fadeIn 0.5s ease forwards;
 }
+
+/* ========== ÍCONE DEPOIS DO TEXTO ========== */
+#btnFavoritar,
+#btnCompartilharObra,
+#btnAdicionarLista,
+#detalhesAcoesSection button {
+  direction: rtl;
+}
+
+#btnFavoritar i,
+#btnCompartilharObra i,
+#btnAdicionarLista i,
+#detalhesAcoesSection button i {
+  margin-left: 8px;
+  margin-right: 0;
+}
+
+/* ========== LETRAS MENORES ========== */
+html { font-size: 8px; }
