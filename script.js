@@ -4752,29 +4752,34 @@ SWIPE NO HERO BANNER (passar com o dedo)
 })();
 
 /* ==========================================
-DOTS DO HERO (indicadores de carrossel)
+HERO CARROSSel — AUTO + SWIPE (definitivo)
 ========================================== */
-function atualizarDotsHero() {
-  const section = document.getElementById('heroBannerSection');
-  if (!section || heroObras.length === 0) return;
+if (!window.__heroCarouselAtivo) {
+  window.__heroCarouselAtivo = true;
 
-  let dots = document.getElementById('heroDots');
-  if (!dots) {
-    dots = document.createElement('div');
-    dots.id = 'heroDots';
-    dots.style.cssText = 'display:flex; gap:6px; justify-content:center; padding:10px 0 0;';
-    section.parentNode.insertBefore(dots, section.nextSibling);
-  }
+  setInterval(function () {
+    if (typeof heroObras !== 'undefined' && heroObras.length > 1) {
+      rotacionarHero();
+      if (typeof atualizarDotsHero === 'function') atualizarDotsHero();
+    }
+  }, 5000);
 
-  const total = heroObras.length;
-  const atual = ((heroIndice - 1) % total + total) % total;
+  (function () {
+    let x = null;
+    document.addEventListener('touchstart', function (e) {
+      const sec = document.getElementById('heroBannerSection');
+      if (!sec || !sec.contains(e.target)) return;
+      x = e.touches[0].clientX;
+    }, { passive: true });
 
-  dots.innerHTML = '';
-  for (let i = 0; i < total; i++) {
-    const d = document.createElement('span');
-    d.style.cssText = 'width:8px; height:8px; border-radius:50%; background:' +
-      (i === atual ? 'var(--primaria)' : 'var(--borda)') + '; transition:all .3s;';
-    dots.appendChild(d);
-  }
+    document.addEventListener('touchend', function (e) {
+      if (x === null) return;
+      const dx = e.changedTouches[0].clientX - x;
+      x = null;
+      if (Math.abs(dx) < 40) return;
+      if (dx < 0) { rotacionarHero(); }
+      else { heroIndice = Math.max(0, heroIndice - 2); rotacionarHero(); }
+      if (typeof atualizarDotsHero === 'function') atualizarDotsHero();
+    }, { passive: true });
+  })();
 }
-setInterval(atualizarDotsHero, 800);
