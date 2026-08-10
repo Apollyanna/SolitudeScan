@@ -4783,3 +4783,14 @@ if (!window.__heroCarouselAtivo) {
     }, { passive: true });
   })();
 }
+
+/* ==========================================
+ESCONDER BOTÃO DE TESTE DOS VISITANTES
+(só admin continua vendo)
+========================================== */
+setTimeout(function () {
+  if (window.usuario && usuario.isAdmin) return;
+  document.querySelectorAll('button').forEach(function (b) {
+    if (b.textContent.trim() === 'Testar Sistema') b.remove();
+  });
+}, 1500);
