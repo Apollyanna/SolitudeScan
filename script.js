@@ -4875,52 +4875,104 @@ setTimeout(function () {
 })();
  
 
-/* ========== AUDITORIA PATCH v2 ========== */
+/* ========== PATCH OFICIAL v3 ========== */
 (function () {
   'use strict';
   try { if (typeof listaObras !== 'undefined' && Array.isArray(listaObras)) listaObras.length = 0; } catch (e) {}
-  
-  var AVATAR = "data:image/svg+xml," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='#1a0f1e'/><circle cx='32' cy='24' r='12' fill='#ec4899'/><path d='M12 56c2-12 10-18 20-18s18 6 20 18z' fill='#ec4899'/></svg>");
-  
-  function limparPlaceholders() {
-    document.querySelectorAll('img').forEach(function (img) {
-      if ((img.src || '').indexOf('via.placeholder') !== -1) img.src = AVATAR;
-    });
-  }
-  
-  function heroReal() {
-    var h1 = document.getElementById('heroTitleDisplay');
-    var sec = document.getElementById('heroBannerSection');
-    if (!h1 || !sec) return;
-    var obras = (typeof obrasRemotas !== 'undefined') ? obrasRemotas : [];
-    if (obras.length > 0) {
-      var o = obras[0];
-      h1.textContent = o.titulo || h1.textContent;
-      var tag = document.getElementById('heroGenreTag');
-      if (tag && o.genero) tag.textContent = String(o.genero).toUpperCase();
-      if (o.capa) {
-        sec.style.backgroundImage = "linear-gradient(180deg, rgba(12,7,15,.3), rgba(12,7,15,.92)), url('" + o.capa + "')";
-        sec.style.backgroundSize = 'cover';
-        sec.style.backgroundPosition = 'center top';
+
+  /* CONSERTA O PAINEL (páginas + sinopse) sem editar HTML */
+  function consertarPainel() {
+    try {
+      var input = document.getElementById('admPagesInput') || document.getElementById('admPaginasArquivo');
+      if (input) {
+        input.id = 'admPaginasArquivo';
+        if (!input.hasAttribute('multiple')) input.setAttribute('multiple', '');
+        var dz = input.closest('.upload-dropzone');
+        if (dz) dz.onclick = function () { input.click(); };
       }
-      sec.style.cursor = 'pointer';
-      sec.onclick = function () { if (o.id) abrirDetalhesObra(String(o.id)); };
-    } else { sec.style.display = 'none'; }
+      var form = null;
+      document.querySelectorAll('#adminModal form').forEach(function (f) {
+        if ((f.getAttribute('onsubmit') || '').indexOf('adicionarObra') !== -1) form = f;
+      });
+      if (form && !document.getElementById('admSinopse')) {
+        var div = document.createElement('div');
+        div.className = 'form-group';
+        div.innerHTML = '<label for="admSinopse">Sinopse da Obra</label><textarea id="admSinopse" rows="4" placeholder="Escreva a sinopse da obra aqui..." style="width:100%;padding:10px;background:var(--fundo);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-size:0.85rem;"></textarea>';
+        form.insertBefore(div, form.querySelector('button[type="submit"]'));
+      }
+    } catch (e) {}
   }
-  
+
+  var AVATAR = "data:image/svg+xml," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='#1a0f1e'/><circle cx='32' cy='24' r='12' fill='#ec4899'/><path d='M12 56c2-12 10-18 20-18s18 6 20 18z' fill='#ec4899'/></svg>");
+  function limparPlaceholders() {
+    try {
+      document.querySelectorAll('img').forEach(function (img) {
+        if ((img.src || '').indexOf('via.placeholder') !== -1) img.src = AVATAR;
+      });
+    } catch (e) {}
+  }
+
+  function heroReal() {
+    try {
+      var h1 = document.getElementById('heroTitleDisplay');
+      var sec = document.getElementById('heroBannerSection');
+      if (!h1 || !sec) return;
+      var obras = (typeof obrasRemotas !== 'undefined' && obrasRemotas) ? obrasRemotas : [];
+      if (obras.length > 0) {
+        var o = obras[0];
+        h1.textContent = o.titulo || h1.textContent;
+        var tag = document.getElementById('heroGenreTag');
+        if (tag && o.genero) tag.textContent = String(o.genero).toUpperCase();
+        if (o.capa) {
+          sec.style.backgroundImage = "linear-gradient(180deg, rgba(12,7,15,.3), rgba(12,7,15,.92)), url('" + o.capa + "')";
+          sec.style.backgroundSize = 'cover';
+          sec.style.backgroundPosition = 'center top';
+        }
+        sec.style.cursor = 'pointer';
+        sec.onclick = function () { if (o.id) abrirDetalhesObra(String(o.id)); };
+      } else { sec.style.display = 'none'; }
+    } catch (e) {}
+  }
+
+  /* COMENTÁRIOS: salva certo e exige login */
   if (typeof adicionarComentario === 'function') {
-    var _comOrig = adicionarComentario;
     adicionarComentario = async function (e) {
       e.preventDefault();
+      var input = document.getElementById('inputComentario');
+      if (!input || !input.value.trim()) return;
       if (!usuario || !usuario.logado) {
         mostrarToast('Entre na sua conta para comentar! 💗', 'alerta');
         toggleModal('loginModal');
         return;
       }
-      return _comOrig(e);
+      if (_supabase) {
+        try {
+          var payload = {
+            work_id: obraAtualId,
+            user_name: usuario.nome || 'Leitor',
+            content: input.value.trim(),
+            is_hidden: false,
+            spoiler: false
+          };
+          if (usuario.id && typeof ehUuid === 'function' && ehUuid(usuario.id)) payload.user_id = usuario.id;
+          try {
+            var cap = (typeof capitulosObraAtual !== 'undefined' && typeof indiceCapituloAtual !== 'undefined') ? capitulosObraAtual[indiceCapituloAtual] : null;
+            if (cap && cap.id) payload.chapter_id = cap.id;
+          } catch (e2) {}
+          var r = await _supabase.from('comments').insert([payload]);
+          if (r.error) throw r.error;
+          mostrarToast('Comentário publicado!', 'sucesso');
+        } catch (err) {
+          mostrarToast('Erro ao comentar: ' + err.message, 'erro');
+          return;
+        }
+      }
+      input.value = '';
+      if (typeof carregarComentariosObra === 'function') carregarComentariosObra(obraAtualId);
     };
   }
-  
+
+  /* LEITOR: título e histórico corretos */
   if (typeof abrirLeitor === 'function') {
     var _leitOrig = abrirLeitor;
     abrirLeitor = async function (indice) {
@@ -4936,7 +4988,7 @@ setTimeout(function () {
       return _leitOrig(indice);
     };
   }
-  
+
   if (typeof renderizarGridObras === 'function') {
     var _gridOrig = renderizarGridObras;
     renderizarGridObras = function (obras) {
@@ -4945,9 +4997,17 @@ setTimeout(function () {
       return r;
     };
   }
-  
-  document.addEventListener('DOMContentLoaded', function () { 
-    setTimeout(function () { heroReal(); limparPlaceholders(); }, 800); 
+
+  document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function () { consertarPainel(); heroReal(); limparPlaceholders(); }, 600);
   });
+  if (typeof abrirPainelAdmin === 'function') {
+    var _admOrig = abrirPainelAdmin;
+    abrirPainelAdmin = function () {
+      var r = _admOrig.apply(this, arguments);
+      setTimeout(consertarPainel, 300);
+      return r;
+    };
+  }
   setInterval(limparPlaceholders, 5000);
 })();
