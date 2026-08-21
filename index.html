@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
+
 <head>
   <meta name="google-site-verification" content="xRmR2yp88xiSvNMZ33EGDkLAIYTTKUKJNK8rRsEvLJ0" />
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://picsum.photos https://via.placeholder.com data: blob:; img-src * data: blob:; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.supabase.co https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://picsum.photos data: blob:; img-src * data: blob:; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://*.supabase.co https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self';">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
   <meta name="referrer" content="no-referrer">
@@ -66,62 +67,13 @@
     } catch (e) {}
   </script>
   
-  <!-- PWA + SEO + Open Graph -->
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/svg+xml" href="icon.png">
-<link rel="apple-touch-icon" href="icon.png">
-<meta name="theme-color" content="#ec4899">
-<meta name="description" content="SolitudeScan — leia manhwas, mangás e manhuás online. Capítulos VIP, leitor profissional e atualizações semanais.">
-<meta name="robots" content="index, follow">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SolitudeScan">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="SolitudeScan">
-<meta property="og:title" content="SolitudeScan — Manhwas, Mangás e Manhuás Online">
-<meta property="og:description" content="Leia suas obras favoritas com leitor profissional, capítulos VIP e atualizações semanais.">
-<meta property="og:url" content="https://solitudescan.netlify.app/">
-<meta property="og:image" content="https://solitudescan.netlify.app/icon.png">
-<meta property="og:locale" content="pt_BR">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="SolitudeScan — Manhwas, Mangás e Manhuás Online">
-<meta name="twitter:description" content="Leia suas obras favoritas com leitor profissional.">
-<meta name="twitter:image" content="https://solitudescan.netlify.app/icon.png">
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "WebSite",
-      "@id": "https://solitudescan.netlify.app/#website",
-      "url": "https://solitudescan.netlify.app/",
-      "name": "SolitudeScan",
-      "description": "Leia manhwas, mangás e manhuás online com experiência de leitura profissional.",
-      "inLanguage": "pt-BR",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": {
-          "@type": "EntryPoint",
-          "urlTemplate": "https://solitudescan.netlify.app/?busca={search_term_string}"
-        },
-        "query-input": "required name=search_term_string"
-      }
-    },
-    {
-      "@type": "Organization",
-      "@id": "https://solitudescan.netlify.app/#organization",
-      "name": "SolitudeScan",
-      "url": "https://solitudescan.netlify.app/",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://solitudescan.netlify.app/icon.png"
-      }
-    }
-  ]
-}
-</script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SolitudeScan">
 
 </head>
 <body>
@@ -675,13 +627,17 @@
           <label for="admCapaArquivo">Ou envie um arquivo de capa</label>
           <input type="file" id="admCapaArquivo" accept="image/*">
         </div>
+        <div class="form-group">
+          <label for="admSinopse">Sinopse da Obra</label>
+          <textarea id="admSinopse" rows="4" placeholder="Escreva a sinopse da obra aqui..." style="width:100%; padding:10px; background:var(--fundo); border:1px solid var(--borda); border-radius:8px; color:var(--texto); font-size:0.85rem; resize:vertical;"></textarea>
+        </div>
         
         <div class="form-group">
           <label>Upload das Páginas do Capítulo (Drag & Drop)</label>
-          <div class="upload-dropzone" onclick="document.getElementById('admPagesInput').click()">
+          <div class="upload-dropzone" onclick="document.getElementById('admPaginasArquivo').click()">
             <i class="fa-solid fa-cloud-arrow-up" style="font-size: 1.5rem; color: var(--primaria); margin-bottom: 6px;"></i>
             <p style="font-size: 0.75rem; color: var(--texto-claro);">Clique ou arraste as imagens das páginas aqui</p>
-            <input type="file" id="admPagesInput" multiple accept="image/*" style="display: none;">
+            <input type="file" id="admPaginasArquivo" multiple accept="image/*" style="display: none;">
           </div>
         </div>
 
@@ -750,7 +706,6 @@
     <a class="nav-item" onclick="switchTab('tab-profile', this)" role="button" aria-label="Perfil do Usuário"><i class="fa-solid fa-user"></i></a>
   </nav>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="script.js"></script>
 </body>
 </html>
