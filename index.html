@@ -114,7 +114,6 @@
         document.documentElement.classList.add('dark');
         document.documentElement.classList.remove('light');
       }
-      // Modo escuro automático por horário (18h-6h)
       if (!t) {
         var h = new Date().getHours();
         if (h >= 18 || h < 6) {
@@ -125,7 +124,7 @@
     } catch(e){}
   </script>
 
-  <!-- Supabase (única inclusão) -->
+  <!-- Supabase (única inclusão no head) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -725,12 +724,14 @@
           <textarea id="admSinopse" rows="4" placeholder="Escreva a sinopse da obra aqui..." maxlength="2000" style="width:100%;padding:10px;background:var(--fundo);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-size:0.85rem;resize:vertical;font-family:inherit;"></textarea>
         </div>
 
+        <!-- ✅ CORREÇÃO: INPUT AGORA ACEITA PDF + CONTADOR DE ARQUIVOS -->
         <div class="form-group">
-          <label>Upload das Páginas do Capítulo (Drag & Drop)</label>
-          <div class="upload-dropzone" onclick="document.getElementById('admPaginasArquivo').click()" role="button" tabindex="0" aria-label="Selecionar páginas do capítulo">
+          <label>Upload das Páginas do Capítulo</label>
+          <div class="upload-dropzone upload-dropzone-pdf" onclick="document.getElementById('admPaginasArquivo').click()" role="button" tabindex="0" aria-label="Selecionar páginas ou PDF">
             <i class="fa-solid fa-cloud-arrow-up" style="font-size:1.5rem;color:var(--primaria);margin-bottom:6px;" aria-hidden="true"></i>
-            <p style="font-size:0.75rem;color:var(--texto-claro);">Clique ou arraste as imagens das páginas aqui</p>
-            <input type="file" id="admPaginasArquivo" multiple accept="image/*" style="display:none;">
+            <p style="font-size:0.75rem;color:var(--texto-claro);">Arraste imagens <strong>OU um PDF completo</strong> aqui</p>
+            <p id="admPaginasContagem" style="font-size:0.65rem;color:var(--primaria);margin-top:6px;"></p>
+            <input type="file" id="admPaginasArquivo" multiple accept="image/*,application/pdf" style="display:none;" onchange="document.getElementById('admPaginasContagem').textContent=this.files.length+' arquivo(s) selecionado(s)'">
           </div>
         </div>
 
@@ -804,33 +805,34 @@
     <a class="nav-item" onclick="switchTab('tab-profile',this)" role="button" aria-label="Perfil do Usuário" tabindex="0"><i class="fa-solid fa-user" aria-hidden="true"></i></a>
   </nav>
 
+  <!-- ✅ PDF.js — CARREGADO ANTES DO script.js (CORRIGIDO) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window['pdfjsLib']) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+
   <!-- Proteção inline contra cópia + atalhos -->
   <script>
   (function(){
-    // Bloqueio de menu de contexto no leitor
     document.addEventListener('contextmenu', function(e){
-      if (e.target && e.target.closest && e.target.closest('#readerModal')) {
-        e.preventDefault();
-      }
+      if (e.target && e.target.closest && e.target.closest('#readerModal')) e.preventDefault();
     });
-    // Bloqueio de atalhos no leitor (F12, Ctrl+Shift+I, Ctrl+S, Ctrl+U)
     document.addEventListener('keydown', function(e){
       var reader = document.getElementById('readerModal');
       if (!reader || !reader.classList.contains('active')) return;
       if (e.key === 'F12') e.preventDefault();
-      if (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key)) e.preventDefault();
+      if (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) e.preventDefault();
       if (e.ctrlKey && ['s','u','p'].includes(e.key.toLowerCase())) e.preventDefault();
     });
-    // Desabilitar arrastar imagens
     document.addEventListener('dragstart', function(e){
-      if (e.target && e.target.tagName === 'IMG' && e.target.closest && e.target.closest('#readerModal')) {
-        e.preventDefault();
-      }
+      if (e.target && e.target.tagName === 'IMG' && e.target.closest && e.target.closest('#readerModal')) e.preventDefault();
     });
   })();
   </script>
 
-  <!-- Script Principal -->
+  <!-- Script Principal (usa PDF.js e Supabase) -->
   <script src="script.js"></script>
 </body>
 </html>
