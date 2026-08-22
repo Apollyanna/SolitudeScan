@@ -5394,3 +5394,35 @@ uploadPaginasSupabase = async function (fileList) {
   if (!todas.length) return [];
   return _uploadPaginasOriginal(todas);
 };
+
+/* ============================================================
+   PATCH PDF v2 — CORRIGE O SELETOR DE ARQUIVOS
+   (força o input a aceitar PDF no momento certo)
+   ============================================================ */
+(function () {
+  function liberarPDF() {
+    var inp = document.getElementById('admPaginasArquivo');
+    if (inp && (inp.getAttribute('accept') || '') !== 'image/*,application/pdf') {
+      inp.setAttribute('accept', 'image/*,application/pdf');
+    }
+  }
+
+  // 1) roda agora
+  liberarPDF();
+
+  // 2) roda toda vez que o painel admin abrir
+  if (typeof abrirPainelAdmin === 'function') {
+    var _abrir = abrirPainelAdmin;
+    abrirPainelAdmin = function () {
+      var r = _abrir.apply(this, arguments);
+      setTimeout(liberarPDF, 200);
+      setTimeout(liberarPDF, 800);
+      return r;
+    };
+  }
+
+  // 3) rede de segurança: qualquer mudança no DOM re-aplica
+  if (typeof MutationObserver !== 'undefined' && document.body) {
+    new MutationObserver(liberarPDF).observe(document.body, { childList: true, subtree: true });
+  }
+})();
