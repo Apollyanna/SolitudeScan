@@ -5312,3 +5312,85 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 });
+
+/* ============================================================
+   PATCH PDF v1 — COLE NO FINAL DO script.js
+   (carrega PDF.js sozinho, libera PDF no input e converte)
+   ============================================================ */
+
+// 1) Garante que o input aceita PDF (mesmo que o HTML não tenha)
+(function () {
+  const inp = document.getElementById('admPaginasArquivo');
+  if (inp) inp.setAttribute('accept', 'image/*,application/pdf');
+})();
+
+// 2) Carrega o PDF.js sozinho se o HTML não carregou
+if (!window.pdfjsLib) {
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  s.onload = function () {
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  };
+  document.head.appendChild(s);
+}
+
+// 3) Detecta se o arquivo é PDF
+function ehArquivoPDF(file) {
+  return !!file && (file.type === 'application/pdf' || /\.pdf$/i.test(file.name));
+}
+
+// 4) Converte cada página do PDF em imagem WebP
+async function processarPDFParaImagens(file, qualidade = 0.82, escala = 2) {
+  if (!window.pdfjsLib) throw new Error('PDF.js ainda carregando, tente de novo');
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const imagens = [];
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    mostrarToast('Convertendo página ' + i + ' de ' + pdf.numPages + '...', 'info', 1000);
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: escala });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.floor(viewport.width);
+    canvas.height = Math.floor(viewport.height);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+    let blob = await new Promise(res => canvas.toBlob(res, 'image/webp', qualidade));
+    if (!blob) blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+
+    const ext = blob.type.indexOf('webp') !== -1 ? '.webp' : '.png';
+    imagens.push(new File([blob], 'pagina_' + String(i).padStart(3, '0') + ext, { type: blob.type }));
+  }
+  return imagens;
+}
+
+// 5) Substitui o upload original: aceita IMAGENS + PDF juntos
+const _uploadPaginasOriginal = uploadPaginasSupabase;
+uploadPaginasSupabase = async function (fileList) {
+  if (!fileList || !fileList.length) return [];
+
+  const arquivos = Array.from(fileList);
+  const pdfs = arquivos.filter(ehArquivoPDF);
+  const imagens = arquivos.filter(f => !ehArquivoPDF(f));
+
+  let todas = imagens.slice();
+  for (const pdf of pdfs) {
+    try {
+      mostrarToast('Abrindo ' + pdf.name + '...', 'info', 2000);
+      const paginas = await processarPDFParaImagens(pdf);
+      todas = todas.concat(paginas);
+      mostrarToast('PDF convertido! ' + paginas.length + ' páginas prontas.', 'sucesso');
+    } catch (err) {
+      mostrarToast('Falha no PDF: ' + err.message, 'erro');
+    }
+  }
+
+  if (!todas.length) return [];
+  return _uploadPaginasOriginal(todas);
+};
