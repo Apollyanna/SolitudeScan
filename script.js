@@ -3233,7 +3233,6 @@ function restaurarCatalogoPadrao() {
 /* =========================================================================
    33. CADASTRO DE OBRAS — COM CONVERSÃO WEBP E SINOPSE
    ========================================================================= */
-
 async function adicionarObra(e) {
   e.preventDefault();
   if (!usuario.isAdmin) {
@@ -3253,7 +3252,7 @@ async function adicionarObra(e) {
   const elSinopse = document.getElementById('admSinopse');
   const sinopseObra = (elSinopse && elSinopse.value.trim()) || 'Obra cadastrada pelo painel administrativo da SolitudeScan.';
 
-  mostrarToast('Enviando capa e páginas... aguarde.', 'info', 4000);
+  mostrarToast('Processando capa e páginas... aguarde.', 'info', 4000);
 
   let capaUrl = (document.getElementById('admCapa').value || '').trim();
   const inputCapaFile = document.getElementById('admCapaArquivo');
@@ -3262,8 +3261,9 @@ async function adicionarObra(e) {
     if (urlEnviada) capaUrl = urlEnviada;
   }
 
+  // ✅ CORREÇÃO APLICADA: usa a versão inteligente que aceita PDF + imagens
   const inputPaginas = document.getElementById('admPaginasArquivo');
-  const paginas = await uploadPaginasSupabase(inputPaginas ? inputPaginas.files : []);
+  const paginas = await uploadPaginasSupabaseInteligente(inputPaginas ? inputPaginas.files : []);
 
   const slug = tituloObra.toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
