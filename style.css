@@ -1592,3 +1592,81 @@ html.light .bottom-nav {
 
 /* ========== LETRAS MENORES ========== */
 html { font-size: 11px; }
+
+/* ==========================================
+   CORREÇÕES FINAIS — SUBSTITUIR BLOCO FINAL
+========================================== */
+
+/* ========== ÍCONE DEPOIS DO TEXTO ========== */
+#btnFavoritar,
+#btnCompartilharObra,
+#btnAdicionarLista,
+#detalhesAcoesSection button {
+  direction: rtl;
+}
+
+#btnFavoritar i,
+#btnCompartilharObra i,
+#btnAdicionarLista i,
+#detalhesAcoesSection button i {
+  margin-left: 8px;
+  margin-right: 0;
+}
+
+/* ========== FONTES E TOUCH (CORRIGIDO) ========== */
+html {
+  font-size: 15px; /* Era 11px - textos minúsculos em Android */
+}
+
+/* Remove delay de 300ms no clique do iOS em todos os elementos clicáveis */
+a, button, .chip, .manga-card, .nav-item, .carousel-item, .settings-item {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ========== PDF LOADING OVERLAY ========== */
+.pdf-loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 7, 15, 0.95);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  backdrop-filter: blur(8px);
+}
+
+.pdf-loading-overlay .spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid var(--borda);
+  border-top-color: var(--primaria);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.pdf-loading-overlay p {
+  color: var(--texto);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ========== ZONA DE DROP DO PDF ========== */
+.upload-dropzone-pdf {
+  border: 2px dashed var(--primaria);
+  background: rgba(236, 72, 153, 0.05);
+}
+
+.upload-dropzone-pdf::before {
+  content: '📄 Aceita PDF, JPG ou PNG';
+  display: block;
+  font-size: 0.7rem;
+  color: var(--rosa-claro);
+  margin-bottom: 6px;
+}
