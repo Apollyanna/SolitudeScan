@@ -1590,30 +1590,7 @@ html.light .bottom-nav {
   margin-right: 0;
 }
 
-/* ========== LETRAS MENORES ========== */
-html { font-size: 11px; }
-
-/* ==========================================
-   CORREÇÕES FINAIS — SUBSTITUIR BLOCO FINAL
-========================================== */
-
-/* ========== ÍCONE DEPOIS DO TEXTO ========== */
-#btnFavoritar,
-#btnCompartilharObra,
-#btnAdicionarLista,
-#detalhesAcoesSection button {
-  direction: rtl;
-}
-
-#btnFavoritar i,
-#btnCompartilharObra i,
-#btnAdicionarLista i,
-#detalhesAcoesSection button i {
-  margin-left: 8px;
-  margin-right: 0;
-}
-
-/* ========== FONTES E TOUCH (CORRIGIDO) ========== */
+/* ========== FONTES E TOUCH ========== */
 html {
   font-size: 15px; /* Era 11px - textos minúsculos em Android */
 }
@@ -1669,4 +1646,76 @@ a, button, .chip, .manga-card, .nav-item, .carousel-item, .settings-item {
   font-size: 0.7rem;
   color: var(--rosa-claro);
   margin-bottom: 6px;
+}
+/* ==========================================
+   NOVIDADE — BOTÕES FLUTUANTES (OBRA ALEATÓRIA / VOLTAR AO TOPO)
+   Bloco 100% novo: não altera nenhuma regra já existente.
+========================================== */
+.fab-novo {
+  position: fixed;
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--fundo-card);
+  color: var(--primaria);
+  border: 1px solid var(--borda);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  z-index: 950;
+  transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+}
+
+.fab-novo:hover {
+  transform: translateY(-2px);
+  background: var(--primaria);
+  color: #fff;
+}
+
+.fab-novo:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.fab-obra-aleatoria {
+  bottom: 96px;
+}
+
+.fab-obra-aleatoria.girando i {
+  animation: girarDado 0.6s linear infinite;
+}
+
+@keyframes girarDado {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.fab-voltar-topo {
+  bottom: 154px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+}
+
+.fab-voltar-topo.visivel {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+body.imersivo .fab-novo {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .fab-novo {
+    right: 24px;
+  }
+  .fab-obra-aleatoria { bottom: 32px; }
+  .fab-voltar-topo { bottom: 90px; }
 }
