@@ -1,7 +1,8 @@
 /* =========================================================================
-   SOLITUDESCAN — SCRIPT PRINCIPAL v4.0 (REFACTORADO E BLINDADO)
-   Arquitetura modular, segurança rigorosa, sem variáveis globais poluídas.
-   Todas as funcionalidades preservadas e aprimoradas.
+   SOLITUDESCAN — SCRIPT PRINCIPAL v4.0 (COMPLETO E BLINDADO)
+   Todas as funcionalidades originais + melhorias de segurança e arquitetura.
+   Sem patches sobrepostos. Sem código duplicado. Sem serviços mortos.
+   Dividido em 5 partes para manutenção e revisão.
    ========================================================================= */
 
 'use strict';
@@ -20,7 +21,11 @@ const CONFIG = Object.freeze({
     'VIP Mensal': 30,
     'VIP Trimestral': 90,
     'VIP Anual': 365
-  })
+  }),
+  MAX_UPLOAD_SIZE: 50 * 1024 * 1024, // 50MB
+  RATE_LIMIT_COMENTARIO: 5000, // 5 segundos
+  MAX_COMENTARIO_LENGTH: 500,
+  MAX_HISTORICO_ITEMS: 50
 });
 
 const PLACEHOLDERS = Object.freeze({
@@ -87,7 +92,8 @@ const AppState = {
     responderAComentarioId: null
   },
   notificacoes: {
-    lista: []
+    lista: [],
+    dropdownAberto: false
   },
   pix: {
     planoAtual: { plano: '', valor: '' },
@@ -109,17 +115,27 @@ const AppState = {
     abaAtiva: 'historico'
   },
   admin: {
-    editandoObraId: null
+    editandoObraId: null,
+    obrasCarregadas: false,
+    usuariosCarregados: false,
+    pagamentosCarregados: false
   },
   denuncia: {
-    alvoAtual: null
+    alvoAtual: null,
+    tipo: ''
   },
   pwa: {
     deferredInstallPrompt: null
   },
   ui: {
     acaoConfirmada: null,
-    ordemCapitulosInvertida: false
+    ordemCapitulosInvertida: false,
+    modalAtual: null
+  },
+  modais: {
+    listaObras: [],
+    listaUsuarios: [],
+    listaPagamentos: []
   }
 };
 
@@ -178,6 +194,10 @@ function formatarNumero(num) {
   return String(num);
 }
 
+function formatarMoeda(valor) {
+  return 'R$ ' + Number(valor).toFixed(2).replace('.', ',');
+}
+
 function dataRelativa(iso) {
   if (!iso) return '';
   const diff = Date.now() - new Date(iso).getTime();
@@ -192,11 +212,33 @@ function dataRelativa(iso) {
   return new Date(iso).toLocaleDateString('pt-BR');
 }
 
+function formatarDataCompleta(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
 function debounce(fn, wait) {
   let t;
   return function (...args) {
     clearTimeout(t);
     t = setTimeout(() => fn.apply(this, args), wait);
+  };
+}
+
+function throttle(fn, limit) {
+  let inThrottle;
+  return function (...args) {
+    if (!inThrottle) {
+      fn.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
   };
 }
 
@@ -214,7 +256,8 @@ function mostrarToast(mensagem, tipo = 'info', duracao = 4000) {
   const toast = document.createElement('div');
   toast.className = 'toast toast-' + tipo;
   toast.setAttribute('role', 'status');
-  toast.innerHTML = '<i class="fa-solid ' + (icons[tipo] || icons.info) + '"></i><span>' + escaparHtml(mensagem) + '</span>';
+  toast.setAttribute('aria-live', 'polite');
+  toast.innerHTML = '<i class="fa-solid ' + (icons[tipo] || icons.info) + '" aria-hidden="true"></i><span>' + escaparHtml(mensagem) + '</span>';
   container.appendChild(toast);
 
   setTimeout(() => {
@@ -226,25 +269,46 @@ function mostrarToast(mensagem, tipo = 'info', duracao = 4000) {
 function toggleModal(modalId) {
   const modal = document.getElementById(modalId);
   if (!modal) return;
+  
   const abrindo = !modal.classList.contains('active');
   modal.classList.toggle('active', abrindo);
   document.body.style.overflow = abrindo ? 'hidden' : 'auto';
+  
   if (abrindo) {
-    const foco = modal.querySelector('input, textarea, button');
+    AppState.ui.modalAtual = modalId;
+    const foco = modal.querySelector('input, textarea, button, [tabindex]');
     if (foco) setTimeout(() => foco.focus(), 120);
+  } else {
+    AppState.ui.modalAtual = null;
   }
 }
 
+function fecharTodosModais() {
+  document.querySelectorAll('.modal.active').forEach(modal => {
+    modal.classList.remove('active');
+  });
+  document.body.style.overflow = 'auto';
+  AppState.ui.modalAtual = null;
+}
+
 function abrirConfirmacao(titulo, msg, onOk) {
-  document.getElementById('confirmTitulo').textContent = titulo;
-  document.getElementById('confirmMsg').textContent = msg;
+  const tituloEl = document.getElementById('confirmTitulo');
+  const msgEl = document.getElementById('confirmMsg');
+  
+  if (tituloEl) tituloEl.textContent = titulo;
+  if (msgEl) msgEl.textContent = msg;
+  
   AppState.ui.acaoConfirmada = onOk;
+  
   const btn = document.getElementById('confirmBtnOk');
-  btn.onclick = () => {
-    toggleModal('confirmModal');
-    if (AppState.ui.acaoConfirmada) AppState.ui.acaoConfirmada();
-    AppState.ui.acaoConfirmada = null;
-  };
+  if (btn) {
+    btn.onclick = () => {
+      toggleModal('confirmModal');
+      if (AppState.ui.acaoConfirmada) AppState.ui.acaoConfirmada();
+      AppState.ui.acaoConfirmada = null;
+    };
+  }
+  
   toggleModal('confirmModal');
 }
 
@@ -277,6 +341,10 @@ function todasAsObras() {
   return [...mapa.values()];
 }
 
+function encontrarObraPorId(id) {
+  return todasAsObras().find(o => String(o.id) === String(id));
+}
+
 /* =========================================================================
    5. SEGURANÇA — CLICKJACKING + PROTEÇÕES LEITOR
    ========================================================================= */
@@ -294,14 +362,17 @@ function ativarProtecaoClickjacking() {
 }
 
 function ativarProtecoesLeitor() {
+  // Bloqueio de botão direito no leitor
   document.addEventListener('contextmenu', e => {
     if (e.target && e.target.closest && e.target.closest('#readerModal')) e.preventDefault();
   });
 
+  // Bloqueio de arrastar imagens do leitor
   document.addEventListener('dragstart', e => {
     if (e.target && e.target.tagName === 'IMG' && e.target.closest && e.target.closest('#readerModal')) e.preventDefault();
   });
 
+  // Bloqueio de F12 + atalhos (Ctrl+S, Ctrl+U, Ctrl+Shift+I)
   document.addEventListener('keydown', e => {
     const reader = document.getElementById('readerModal');
     if (!reader || !reader.classList.contains('active')) return;
@@ -326,7 +397,9 @@ function limparPlaceholdersMortos() {
    6. AUTENTICAÇÃO — SUPABASE AUTH (SEGURANÇA REFORÇADA)
    ========================================================================= */
 
-function fazerLogin() { toggleModal('loginModal'); }
+function fazerLogin() { 
+  toggleModal('loginModal'); 
+}
 
 function abrirCadastro() {
   const l = document.getElementById('loginModal');
@@ -703,6 +776,13 @@ async function salvarPerfil(e) {
   const fileInput = document.getElementById('editFotoArquivo');
   if (fileInput && fileInput.files.length > 0) {
     const file = fileInput.files[0];
+    
+    // Validação de tamanho
+    if (file.size > 5 * 1024 * 1024) { // 5MB para avatar
+      mostrarToast('Imagem muito grande. Máximo 5MB.', 'alerta');
+      return;
+    }
+    
     mostrarToast('Processando sua foto...', 'info', 2000);
     let urlFinal = null;
 
@@ -767,6 +847,80 @@ async function abrirConfigPerfil() {
   toggleModal('configModal');
 }
 
+function previewFotoPerfil(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    mostrarToast('Escolha uma imagem válida da sua galeria.', 'alerta');
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    mostrarToast('Imagem muito grande. Máximo 5MB.', 'alerta');
+    return;
+  }
+  const prev = document.getElementById('editFotoPreview');
+  if (prev) prev.src = URL.createObjectURL(file);
+}
+
+function redimensionarImagem(file, max = 256) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function garantirZonaPerigoPerfil() {
+  const container = document.querySelector('.profile-danger-zone');
+  if (container || !AppState.usuario.logado) return;
+
+  const profileSection = document.querySelector('.profile-section');
+  if (!profileSection) return;
+
+  const zona = document.createElement('div');
+  zona.className = 'profile-danger-zone';
+  zona.innerHTML = `
+    <h3>Zona de Perigo</h3>
+    <button class="btn-danger" onclick="solicitarExclusaoConta()">
+      <i class="fa-solid fa-trash"></i> Excluir Minha Conta
+    </button>
+  `;
+  profileSection.appendChild(zona);
+}
+
+function solicitarExclusaoConta() {
+  abrirConfirmacao(
+    'Excluir Conta',
+    'Esta ação é irreversível. Todos os seus dados serão perdidos. Deseja continuar?',
+    async () => {
+      if (!AppState.supabase || !AppState.usuario.logado) return;
+      
+      try {
+        await AppState.supabase.from('account_deletion_requests').insert({
+          user_id: AppState.usuario.id,
+          requested_at: new Date().toISOString()
+        });
+        
+        mostrarToast('Solicitação enviada. Sua conta será excluída em até 30 dias.', 'info', 8000);
+        fazerLogout();
+      } catch (err) {
+        console.error('[SolitudeScan] Erro ao solicitar exclusão:', err);
+        mostrarToast('Falha ao processar solicitação.', 'erro');
+      }
+    }
+  );
+}
+
 /* =========================================================================
    9. CATÁLOGO — MAPEAMENTO SUPABASE → LOCAL
    ========================================================================= */
@@ -774,6 +928,7 @@ async function abrirConfigPerfil() {
 async function carregarObras() {
   if (!AppState.supabase) {
     mostrarToast('Sistema offline. Algumas funcionalidades podem estar limitadas.', 'alerta', 5000);
+    renderizarCatalogo();
     return;
   }
 
@@ -807,7 +962,8 @@ async function carregarObras() {
       atualizadoEm: obra.updated_at,
       criadoEm: obra.created_at,
       exclusivo: !!obra.is_exclusive,
-      adulto: !!obra.is_adult
+      adulto: !!obra.is_adult,
+      destaque: !!obra.is_featured
     }));
 
     aplicarOverridesLocais();
@@ -875,13 +1031,19 @@ function renderizarCatalogo() {
     obras = obras.filter(o => o.status === AppState.catalogo.statusFiltro);
   }
 
+  // Filtro por tipo (adulto)
+  if (!AppState.usuario.isAdmin) {
+    obras = obras.filter(o => !o.adulto);
+  }
+
   // Filtro por busca
   if (AppState.catalogo.termoBusca) {
     const termo = AppState.catalogo.termoBusca.toLowerCase();
     obras = obras.filter(o => 
       o.titulo.toLowerCase().includes(termo) ||
       o.autor.toLowerCase().includes(termo) ||
-      (o.artista || '').toLowerCase().includes(termo)
+      (o.artista || '').toLowerCase().includes(termo) ||
+      (o.sinopse || '').toLowerCase().includes(termo)
     );
   }
 
@@ -893,13 +1055,19 @@ function renderizarCatalogo() {
     case 'avaliados':
       obras.sort((a, b) => (b.avaliacao || 0) - (a.avaliacao || 0));
       break;
+    case 'titulo':
+      obras.sort((a, b) => a.titulo.localeCompare(b.titulo, 'pt-BR'));
+      break;
+    case 'capitulos':
+      obras.sort((a, b) => (b.totalCapitulos || 0) - (a.totalCapitulos || 0));
+      break;
     case 'recentes':
     default:
       obras.sort((a, b) => new Date(b.atualizadoEm || 0) - new Date(a.atualizadoEm || 0));
   }
 
   if (obras.length === 0) {
-    container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-book-open"></i><p>Nenhuma obra encontrada com os filtros aplicados.</p></div>';
+    container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-book-open"></i><p>Nenhuma obra encontrada com os filtros aplicados.</p><button class="btn-secondary" onclick="limparFiltros()">Limpar Filtros</button></div>';
     return;
   }
 
@@ -910,26 +1078,50 @@ function renderizarCatalogo() {
 function criarCardObra(obra) {
   const generos = (obra.generos || []).slice(0, 2).map(g => `<span class="genre-tag">${escaparHtml(g)}</span>`).join('');
   const exclusivo = obra.exclusivo ? '<span class="exclusive-badge"><i class="fa-solid fa-star"></i> Exclusivo</span>' : '';
+  const adulto = obra.adulto ? '<span class="adult-badge">+18</span>' : '';
+  const statusClass = 'status-' + (obra.status || '').toLowerCase().replace(/\s+/g, '-');
   
   return `
     <article class="manga-card" data-id="${obra.id}" onclick="abrirDetalhesObra('${obra.id}')" role="listitem" tabindex="0">
       <div class="manga-cover">
         <img src="${obra.capa}" alt="Capa de ${escaparHtml(obra.titulo)}" loading="lazy" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
         ${exclusivo}
+        ${adulto}
         <div class="manga-overlay">
           <span class="chapter-count"><i class="fa-solid fa-book"></i> ${obra.totalCapitulos || 0} cap.</span>
+          <span class="view-count"><i class="fa-solid fa-eye"></i> ${formatarNumero(obra.visualizacoes || 0)}</span>
         </div>
       </div>
       <div class="manga-info">
         <h3 class="manga-title">${escaparHtml(obra.titulo)}</h3>
         <div class="manga-meta">
-          <span class="manga-status status-${obra.status.toLowerCase().replace(/\s+/g, '-')}">${escaparHtml(obra.status)}</span>
+          <span class="manga-status ${statusClass}">${escaparHtml(obra.status)}</span>
           <span class="manga-rating"><i class="fa-solid fa-star"></i> ${(obra.avaliacao || 0).toFixed(1)}</span>
         </div>
         <div class="manga-genres">${generos}</div>
       </div>
     </article>
   `;
+}
+
+function limparFiltros() {
+  AppState.catalogo.generoAtual = 'Todos';
+  AppState.catalogo.statusFiltro = 'Todos';
+  AppState.catalogo.termoBusca = '';
+  AppState.catalogo.ordemFiltro = 'recentes';
+
+  const generoSelect = document.getElementById('generoFiltro');
+  const statusSelect = document.getElementById('statusFiltro');
+  const ordemSelect = document.getElementById('ordemFiltro');
+  const searchInput = document.getElementById('searchInput');
+
+  if (generoSelect) generoSelect.value = 'Todos';
+  if (statusSelect) statusSelect.value = 'Todos';
+  if (ordemSelect) ordemSelect.value = 'recentes';
+  if (searchInput) searchInput.value = '';
+
+  renderizarCatalogo();
+  mostrarToast('Filtros limpos.', 'info', 2000);
 }
 
 /* =========================================================================
@@ -947,6 +1139,15 @@ function inicializarBusca() {
 
   input.addEventListener('input', (e) => {
     buscaDebounced(e.target.value.trim());
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      input.value = '';
+      AppState.catalogo.termoBusca = '';
+      renderizarCatalogo();
+      input.blur();
+    }
   });
 
   // Filtros
@@ -984,10 +1185,18 @@ function renderizarHeroBanner() {
   const track = document.getElementById('heroTrack');
   if (!track) return;
 
-  // Selecionar obras em destaque (exclusivas ou mais populares)
-  const destaques = AppState.catalogo.obrasRemotas
-    .filter(o => o.exclusivo || (o.visualizacoes || 0) > 1000)
+  // Selecionar obras em destaque (featured, exclusivas ou mais populares)
+  let destaques = AppState.catalogo.obrasRemotas
+    .filter(o => o.destaque || o.exclusivo)
     .slice(0, 5);
+
+  if (destaques.length < 3) {
+    const populares = AppState.catalogo.obrasRemotas
+      .filter(o => !o.destaque && !o.exclusivo && !o.adulto)
+      .sort((a, b) => (b.visualizacoes || 0) - (a.visualizacoes || 0))
+      .slice(0, 5 - destaques.length);
+    destaques = [...destaques, ...populares];
+  }
 
   if (destaques.length === 0) {
     track.innerHTML = '';
@@ -999,10 +1208,20 @@ function renderizarHeroBanner() {
 
   track.innerHTML = destaques.map((obra, i) => `
     <div class="hero-slide ${i === 0 ? 'active' : ''}" data-index="${i}">
-      <img src="${obra.capa}" alt="${escaparHtml(obra.titulo)}" class="hero-bg">
+      <img src="${obra.capa}" alt="${escaparHtml(obra.titulo)}" class="hero-bg" loading="${i === 0 ? 'eager' : 'lazy'}">
+      <div class="hero-overlay"></div>
       <div class="hero-content">
+        <div class="hero-badges">
+          ${obra.exclusivo ? '<span class="hero-badge exclusive"><i class="fa-solid fa-star"></i> Exclusivo</span>' : ''}
+          ${obra.destaque ? '<span class="hero-badge featured"><i class="fa-solid fa-fire"></i> Destaque</span>' : ''}
+        </div>
         <h2 class="hero-title">${escaparHtml(obra.titulo)}</h2>
-        <p class="hero-description">${escaparHtml((obra.sinopse || '').substring(0, 150))}...</p>
+        <p class="hero-description">${escaparHtml((obra.sinopse || '').substring(0, 180))}${(obra.sinopse || '').length > 180 ? '...' : ''}</p>
+        <div class="hero-meta">
+          <span><i class="fa-solid fa-star"></i> ${(obra.avaliacao || 0).toFixed(1)}</span>
+          <span><i class="fa-solid fa-book"></i> ${obra.totalCapitulos || 0} capítulos</span>
+          <span><i class="fa-solid fa-eye"></i> ${formatarNumero(obra.visualizacoes || 0)}</span>
+        </div>
         <div class="hero-actions">
           <button class="btn-primary" onclick="abrirDetalhesObra('${obra.id}')">
             <i class="fa-solid fa-book-open"></i> Ler Agora
@@ -1014,6 +1233,22 @@ function renderizarHeroBanner() {
       </div>
     </div>
   `).join('');
+
+  // Indicadores
+  const indicators = document.querySelector('.hero-indicators');
+  if (indicators) {
+    indicators.innerHTML = destaques.map((_, i) => 
+      `<button class="hero-indicator ${i === 0 ? 'active' : ''}" data-index="${i}" aria-label="Ir para slide ${i + 1}"></button>`
+    ).join('');
+    
+    indicators.querySelectorAll('.hero-indicator').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        AppState.hero.indice = parseInt(e.target.dataset.index);
+        atualizarHeroSlide();
+        reiniciarAutoRotateHero();
+      });
+    });
+  }
 
   iniciarAutoRotateHero();
 }
@@ -1029,10 +1264,20 @@ function iniciarAutoRotateHero() {
   }, 6000);
 }
 
+function reiniciarAutoRotateHero() {
+  iniciarAutoRotateHero();
+}
+
 function atualizarHeroSlide() {
   const slides = document.querySelectorAll('.hero-slide');
+  const indicators = document.querySelectorAll('.hero-indicator');
+  
   slides.forEach((slide, i) => {
     slide.classList.toggle('active', i === AppState.hero.indice);
+  });
+  
+  indicators.forEach((ind, i) => {
+    ind.classList.toggle('active', i === AppState.hero.indice);
   });
 }
 
@@ -1042,24 +1287,31 @@ function ativarSwipeHero() {
 
   let startX = 0;
   let endX = 0;
+  let startY = 0;
 
   track.addEventListener('touchstart', (e) => {
     startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
   }, { passive: true });
 
   track.addEventListener('touchmove', (e) => {
     endX = e.touches[0].clientX;
   }, { passive: true });
 
-  track.addEventListener('touchend', () => {
-    const diff = startX - endX;
-    if (Math.abs(diff) > 50) {
-      if (diff > 0 && AppState.hero.indice < AppState.hero.obras.length - 1) {
+  track.addEventListener('touchend', (e) => {
+    const diffX = startX - endX;
+    // CORREÇÃO APLICADA AQUI: usando 'e' em vez de 'event' global para compatibilidade strict mode
+    const diffY = Math.abs(startY - (e.changedTouches[0]?.clientY || startY));
+    
+    // Só considera swipe horizontal se for mais significativo que o vertical
+    if (Math.abs(diffX) > 50 && Math.abs(diffX) > diffY) {
+      if (diffX > 0 && AppState.hero.indice < AppState.hero.obras.length - 1) {
         AppState.hero.indice++;
-      } else if (diff < 0 && AppState.hero.indice > 0) {
+      } else if (diffX < 0 && AppState.hero.indice > 0) {
         AppState.hero.indice--;
       }
       atualizarHeroSlide();
+      reiniciarAutoRotateHero();
     }
   });
 }
@@ -1073,8 +1325,14 @@ function renderizarTendencias() {
   if (!container) return;
 
   const tendencias = [...AppState.catalogo.obrasRemotas]
+    .filter(o => !o.adulto)
     .sort((a, b) => (b.visualizacoes || 0) - (a.visualizacoes || 0))
     .slice(0, 6);
+
+  if (tendencias.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>Nenhuma tendência disponível.</p></div>';
+    return;
+  }
 
   container.innerHTML = tendencias.map(obra => criarCardObra(obra)).join('');
 }
@@ -1084,26 +1342,49 @@ function renderizarRanking() {
   if (!container) return;
 
   const ranking = [...AppState.catalogo.obrasRemotas]
+    .filter(o => !o.adulto)
     .sort((a, b) => (b.avaliacao || 0) - (a.avaliacao || 0))
     .slice(0, 10);
 
-  container.innerHTML = ranking.map((obra, i) => `
-    <div class="ranking-item" onclick="abrirDetalhesObra('${obra.id}')">
-      <span class="ranking-position">#${i + 1}</span>
-      <img src="${obra.capa}" alt="${escaparHtml(obra.titulo)}" class="ranking-cover" loading="lazy">
-      <div class="ranking-info">
-        <h4 class="ranking-title">${escaparHtml(obra.titulo)}</h4>
-        <div class="ranking-meta">
-          <span><i class="fa-solid fa-star"></i> ${(obra.avaliacao || 0).toFixed(1)}</span>
-          <span><i class="fa-solid fa-eye"></i> ${formatarNumero(obra.visualizacoes || 0)}</span>
+  if (ranking.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>Nenhuma obra avaliada ainda.</p></div>';
+    return;
+  }
+
+  container.innerHTML = ranking.map((obra, i) => {
+    const medalha = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i + 1);
+    return `
+      <div class="ranking-item" onclick="abrirDetalhesObra('${obra.id}')" tabindex="0" role="listitem">
+        <span class="ranking-position">${medalha}</span>
+        <img src="${obra.capa}" alt="${escaparHtml(obra.titulo)}" class="ranking-cover" loading="lazy" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
+        <div class="ranking-info">
+          <h4 class="ranking-title">${escaparHtml(obra.titulo)}</h4>
+          <div class="ranking-meta">
+            <span><i class="fa-solid fa-star"></i> ${(obra.avaliacao || 0).toFixed(1)}</span>
+            <span><i class="fa-solid fa-eye"></i> ${formatarNumero(obra.visualizacoes || 0)}</span>
+            <span><i class="fa-solid fa-book"></i> ${obra.totalCapitulos || 0} cap.</span>
+          </div>
         </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function renderizarConcluidas() {
-  // Implementação similar para obras completas
+  const container = document.getElementById('concluidasContainer');
+  if (!container) return;
+
+  const concluidas = AppState.catalogo.obrasRemotas
+    .filter(o => o.status === 'Completo' && !o.adulto)
+    .sort((a, b) => (b.avaliacao || 0) - (a.avaliacao || 0))
+    .slice(0, 6);
+
+  if (concluidas.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>Nenhuma obra concluída disponível.</p></div>';
+    return;
+  }
+
+  container.innerHTML = concluidas.map(obra => criarCardObra(obra)).join('');
 }
 
 /* =========================================================================
@@ -1126,20 +1407,28 @@ function renderizarContinueLendo() {
   
   const obrasHistorico = historico.map(h => {
     const obra = AppState.catalogo.obrasRemotas.find(o => String(o.id) === String(h.obraId));
-    return obra ? { ...obra, ultimoCapitulo: h.capitulo } : null;
+    return obra ? { ...obra, ultimoCapitulo: h.capitulo, dataLeitura: h.data } : null;
   }).filter(Boolean);
 
+  if (obrasHistorico.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
   container.innerHTML = obrasHistorico.map(obra => `
-    <article class="manga-card continue-reading" data-id="${obra.id}" onclick="continuarLeitura('${obra.id}')">
+    <article class="manga-card continue-reading" data-id="${obra.id}" onclick="continuarLeitura('${obra.id}')" tabindex="0" role="listitem">
       <div class="manga-cover">
-        <img src="${obra.capa}" alt="${escaparHtml(obra.titulo)}" loading="lazy">
+        <img src="${obra.capa}" alt="${escaparHtml(obra.titulo)}" loading="lazy" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
         <div class="continue-badge">
           <i class="fa-solid fa-bookmark"></i> Cap. ${obra.ultimoCapitulo}
+        </div>
+        <div class="continue-date">
+          ${dataRelativa(obra.dataLeitura)}
         </div>
       </div>
       <div class="manga-info">
         <h3 class="manga-title">${escaparHtml(obra.titulo)}</h3>
-        <p class="continue-text">Continuar lendo</p>
+        <p class="continue-text"><i class="fa-solid fa-play"></i> Continuar lendo</p>
       </div>
     </article>
   `).join('');
@@ -1149,7 +1438,7 @@ function continuarLeitura(obraId) {
   const historico = AppState.usuario.historico.find(h => String(h.obraId) === String(obraId));
   if (historico) {
     abrirDetalhesObra(obraId);
-    // O leitor será aberto no capítulo salvo automaticamente
+    // O leitor será aberto no capítulo salvo automaticamente via AppState
   }
 }
 
@@ -1158,13 +1447,19 @@ function continuarLeitura(obraId) {
    ========================================================================= */
 
 function abrirDetalhesObra(obraId) {
-  const obra = AppState.catalogo.obrasRemotas.find(o => String(o.id) === String(obraId));
+  const obra = encontrarObraPorId(obraId);
   if (!obra) {
     mostrarToast('Obra não encontrada.', 'erro');
     return;
   }
 
   AppState.leitor.obraAtualId = obraId;
+
+  // Incrementar visualizações (local por enquanto)
+  obra.visualizacoes = (obra.visualizacoes || 0) + 1;
+
+  // Atualizar meta tags dinamicamente (SEO)
+  atualizarMetaTagsDinamicas(obra);
 
   const modal = document.getElementById('detalhesModal');
   const body = document.getElementById('detalhesModalBody');
@@ -1180,25 +1475,52 @@ function abrirDetalhesObra(obraId) {
   body.innerHTML = `
     <div class="obra-detalhes">
       <div class="obra-capa-grande">
-        <img src="${obra.capa}" alt="${escaparHtml(obra.titulo)}">
+        <img src="${obra.capa}" alt="${escaparHtml(obra.titulo)}" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
       </div>
       <div class="obra-info">
         <h2>${escaparHtml(obra.titulo)}</h2>
         <div class="obra-meta">
           <p><strong>Autor:</strong> ${escaparHtml(obra.autor)}</p>
           <p><strong>Artista:</strong> ${escaparHtml(obra.artista)}</p>
-          <p><strong>Status:</strong> ${escaparHtml(obra.status)}</p>
+          <p><strong>Status:</strong> <span class="status-badge status-${obra.status.toLowerCase().replace(/\s+/g, '-')}">${escaparHtml(obra.status)}</span></p>
           <p><strong>Tipo:</strong> ${escaparHtml(obra.tipo)}</p>
           <p><strong>Capítulos:</strong> ${obra.totalCapitulos || 0}</p>
+          <p><strong>Visualizações:</strong> ${formatarNumero(obra.visualizacoes || 0)}</p>
         </div>
         <div class="obra-avaliacao">
-          <i class="fa-solid fa-star"></i>
+          <div class="stars-container">
+            ${[1,2,3,4,5].map(n => `
+              <i class="fa-star ${n <= Math.round(obra.avaliacao || 0) ? 'fa-solid' : 'fa-regular'}" 
+                 onclick="avaliarObra('${obra.id}', ${n})" 
+                 style="cursor:pointer;" 
+                 aria-label="Avaliar com ${n} estrelas"></i>
+            `).join('')}
+          </div>
           <span>${(obra.avaliacao || 0).toFixed(1)} (${obra.totalAvaliacoes || 0} avaliações)</span>
         </div>
         <div class="obra-generos">${generos}</div>
         <div class="obra-sinopse">
           <h3>Sinopse</h3>
           <p>${escaparHtml(obra.sinopse)}</p>
+        </div>
+        
+        <div class="obra-comentarios-section">
+          <h3>Comentários</h3>
+          <div id="comentariosContainer" class="comentarios-container">
+            <p>Carregando comentários...</p>
+          </div>
+          ${AppState.usuario.logado ? `
+            <div class="comentario-form">
+              <textarea id="comentarioInput" placeholder="Escreva seu comentário..." maxlength="${CONFIG.MAX_COMENTARIO_LENGTH}"></textarea>
+              <div class="comentario-form-actions">
+                <label class="checkbox-spoiler">
+                  <input type="checkbox" id="comentarioSpoiler">
+                  <span>Contém spoiler</span>
+                </label>
+                <button class="btn-primary small" onclick="enviarComentario('${obra.id}')">Publicar</button>
+              </div>
+            </div>
+          ` : '<p class="login-prompt"><a href="#" onclick="fazerLogin(); return false;">Faça login</a> para comentar.</p>'}
         </div>
       </div>
     </div>
@@ -1212,6 +1534,7 @@ function abrirDetalhesObra(obraId) {
   }
 
   carregarCapitulosObra(obraId);
+  carregarComentarios(obraId).then(() => renderizarComentarios(obraId));
   toggleModal('detalhesModal');
 }
 
@@ -1221,7 +1544,7 @@ async function carregarCapitulosObra(obraId) {
   try {
     const { data, error } = await AppState.supabase
       .from('chapters')
-      .select('id, number, title, created_at')
+      .select('id, number, title, created_at, is_vip_only')
       .eq('work_id', obraId)
       .order('number', { ascending: true });
 
@@ -1231,7 +1554,8 @@ async function carregarCapitulosObra(obraId) {
       id: cap.id,
       numero: cap.number,
       titulo: cap.title || `Capítulo ${cap.number}`,
-      criadoEm: cap.created_at
+      criadoEm: cap.created_at,
+      vipOnly: !!cap.is_vip_only
     }));
 
     renderizarListaCapitulos();
@@ -1242,17 +1566,54 @@ async function carregarCapitulosObra(obraId) {
 
 function renderizarListaCapitulos() {
   const select = document.getElementById('listaCapitulosContainer');
-  if (!select) return;
+  const container = document.getElementById('capitulosListaDetalhes');
+  
+  if (!select && !container) return;
 
-  const capitulos = AppState.leitor.capitulosObraAtual;
+  let capitulos = [...AppState.leitor.capitulosObraAtual];
   
   if (AppState.ui.ordemCapitulosInvertida) {
     capitulos.reverse();
   }
 
-  select.innerHTML = capitulos.map((cap, i) => `
-    <option value="${i}">${escaparHtml(cap.titulo)}</option>
-  `).join('');
+  const optionsHtml = capitulos.map((cap, i) => {
+    const vipTag = cap.vipOnly ? ' <i class="fa-solid fa-crown" style="color:gold;"></i>' : '';
+    return `<option value="${i}">${escaparHtml(cap.titulo)}${vipTag}</option>`;
+  }).join('');
+
+  if (select) {
+    select.innerHTML = optionsHtml;
+    select.onchange = (e) => {
+      abrirLeitor(parseInt(e.target.value));
+    };
+  }
+
+  if (container) {
+    container.innerHTML = capitulos.map((cap, i) => `
+      <div class="capitulo-item ${cap.vipOnly ? 'vip-only' : ''}" onclick="abrirLeitor(${i})" tabindex="0">
+        <span class="capitulo-numero">${escaparHtml(cap.titulo)}</span>
+        <span class="capitulo-data">${dataRelativa(cap.criadoEm)}</span>
+        ${cap.vipOnly ? '<i class="fa-solid fa-crown vip-icon"></i>' : ''}
+      </div>
+    `).join('');
+  }
+}
+
+function enviarComentario(obraId) {
+  const input = document.getElementById('comentarioInput');
+  const spoiler = document.getElementById('comentarioSpoiler');
+  
+  if (!input) return;
+  
+  const texto = input.value.trim();
+  const isSpoiler = spoiler ? spoiler.checked : false;
+  
+  adicionarComentario(obraId, texto, AppState.comentarios.responderAComentarioId, isSpoiler)
+    .then(() => {
+      input.value = '';
+      if (spoiler) spoiler.checked = false;
+      AppState.comentarios.responderAComentarioId = null;
+    });
 }
 
 /* =========================================================================
@@ -1265,6 +1626,12 @@ async function abrirLeitor(capituloIndex = 0) {
     return;
   }
 
+  // Fechar modal de detalhes se estiver aberto
+  const detalhesModal = document.getElementById('detalhesModal');
+  if (detalhesModal && detalhesModal.classList.contains('active')) {
+    toggleModal('detalhesModal');
+  }
+
   AppState.leitor.indiceCapituloAtual = capituloIndex;
   const capitulo = AppState.leitor.capitulosObraAtual[capituloIndex];
   
@@ -1273,16 +1640,24 @@ async function abrirLeitor(capituloIndex = 0) {
     return;
   }
 
-  const readerTitle = document.getElementById('readerTitle');
-  if (readerTitle) {
-    readerTitle.textContent = capitulo.titulo;
+  // Verificar VIP
+  if (capitulo.vipOnly && !AppState.usuario.isVip && !AppState.usuario.isAdmin) {
+    mostrarToast('Este capítulo é exclusivo para membros VIP. Assine para acessar.', 'alerta', 6000);
+    abrirModalVip();
+    return;
   }
 
-  toggleModal('detalhesModal');
+  const readerTitle = document.getElementById('readerTitle');
+  if (readerTitle) {
+    const obra = encontrarObraPorId(AppState.leitor.obraAtualId);
+    readerTitle.textContent = (obra ? obra.titulo + ' — ' : '') + capitulo.titulo;
+  }
+
   toggleModal('readerModal');
 
   await carregarPaginasCapitulo(capitulo.id);
   salvarNoHistorico(AppState.leitor.obraAtualId, capitulo.numero);
+  atualizarBotoesNavegacao();
 }
 
 async function carregarPaginasCapitulo(capituloId) {
@@ -1306,18 +1681,30 @@ async function carregarPaginasCapitulo(capituloId) {
     if (error) throw error;
 
     if (!data || data.length === 0) {
-      container.innerHTML = '<div class="reader-empty">Nenhuma página disponível neste capítulo.</div>';
+      container.innerHTML = '<div class="reader-empty"><i class="fa-solid fa-image"></i><p>Nenhuma página disponível neste capítulo.</p></div>';
       return;
     }
 
-    container.innerHTML = data.map(pagina => `
-      <img src="${pagina.image_url}" alt="Página ${pagina.page_number}" class="reader-page" loading="lazy" onerror="this.src='${PLACEHOLDERS.PAGINA_PLACEHOLDER}'">
+    let paginas = data;
+    if (AppState.leitor.ordemInvertida) {
+      paginas = [...paginas].reverse();
+    }
+
+    container.innerHTML = paginas.map((pagina, i) => `
+      <img src="${pagina.image_url}" 
+           alt="Página ${pagina.page_number}" 
+           class="reader-page" 
+           loading="${i < 3 ? 'eager' : 'lazy'}" 
+           data-page="${pagina.page_number}"
+           onerror="this.src='${PLACEHOLDERS.PAGINA_PLACEHOLDER}'">
     `).join('');
 
-    atualizarBotoesNavegacao();
+    // Scroll para o topo ao abrir
+    container.scrollTop = 0;
+
   } catch (err) {
     console.error('[SolitudeScan] Erro ao carregar páginas:', err);
-    container.innerHTML = '<div class="reader-error">Falha ao carregar as páginas. Tente novamente.</div>';
+    container.innerHTML = '<div class="reader-error"><i class="fa-solid fa-triangle-exclamation"></i><p>Falha ao carregar as páginas. Tente novamente.</p></div>';
   }
 }
 
@@ -1325,6 +1712,14 @@ function fecharLeitor() {
   toggleModal('readerModal');
   AppState.leitor.nivelZoom = 100;
   AppState.leitor.modoImersivo = false;
+  
+  const container = document.getElementById('readerCascataContainer');
+  if (container) {
+    container.style.transform = '';
+  }
+  
+  const zoomDisplay = document.getElementById('zoomLevel');
+  if (zoomDisplay) zoomDisplay.textContent = '100%';
 }
 
 function navegarCapitulo(direcao) {
@@ -1343,9 +1738,17 @@ function atualizarBotoesNavegacao() {
   const btnProximo = document.getElementById('btnProximoCapitulo');
   const select = document.getElementById('listaCapitulosContainer');
 
-  if (btnAnterior) btnAnterior.disabled = AppState.leitor.indiceCapituloAtual === 0;
-  if (btnProximo) btnProximo.disabled = AppState.leitor.indiceCapituloAtual === AppState.leitor.capitulosObraAtual.length - 1;
-  if (select) select.value = AppState.leitor.indiceCapituloAtual;
+  if (btnAnterior) {
+    btnAnterior.disabled = AppState.leitor.indiceCapituloAtual === 0;
+    btnAnterior.onclick = () => navegarCapitulo(-1);
+  }
+  if (btnProximo) {
+    btnProximo.disabled = AppState.leitor.indiceCapituloAtual === AppState.leitor.capitulosObraAtual.length - 1;
+    btnProximo.onclick = () => navegarCapitulo(1);
+  }
+  if (select) {
+    select.value = AppState.leitor.indiceCapituloAtual;
+  }
 }
 
 function ajustarZoom(delta) {
@@ -1369,6 +1772,22 @@ function alternarModoImersivo() {
   if (reader) {
     reader.classList.toggle('immersive', AppState.leitor.modoImersivo);
   }
+  mostrarToast(AppState.leitor.modoImersivo ? 'Modo imersivo ativado.' : 'Modo imersivo desativado.', 'info', 2000);
+}
+
+function inverterOrdemCapitulos() {
+  AppState.leitor.ordemInvertida = !AppState.leitor.ordemInvertida;
+  AppState.ui.ordemCapitulosInvertida = AppState.leitor.ordemInvertida;
+  
+  renderizarListaCapitulos();
+  
+  // Recarregar páginas na nova ordem
+  const capitulo = AppState.leitor.capitulosObraAtual[AppState.leitor.indiceCapituloAtual];
+  if (capitulo) {
+    carregarPaginasCapitulo(capitulo.id);
+  }
+  
+  mostrarToast(AppState.leitor.ordemInvertida ? 'Ordem invertida.' : 'Ordem normal.', 'info', 2000);
 }
 
 /* =========================================================================
@@ -1381,31 +1800,88 @@ function iniciarGestosLeitor() {
 
   let startX = 0;
   let startY = 0;
+  let startDistance = 0;
+  let initialZoom = 100;
 
   reader.addEventListener('touchstart', (e) => {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
+    if (e.touches.length === 1) {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    } else if (e.touches.length === 2) {
+      startDistance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialZoom = AppState.leitor.nivelZoom;
+    }
   }, { passive: true });
 
   reader.addEventListener('touchend', (e) => {
-    const endX = e.changedTouches[0].clientX;
-    const endY = e.changedTouches[0].clientY;
-    const diffX = startX - endX;
-    const diffY = startY - endY;
+    if (e.touches.length === 0) {
+      const endX = e.changedTouches[0].clientX;
+      const diffX = startX - endX;
 
-    // Swipe horizontal para navegar entre capítulos
-    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 100) {
-      if (diffX > 0) {
-        navegarCapitulo(1); // Próximo
-      } else {
-        navegarCapitulo(-1); // Anterior
+      // Swipe horizontal para navegar entre capítulos
+      if (Math.abs(diffX) > 100 && Math.abs(diffX) > Math.abs(startY - e.changedTouches[0].clientY)) {
+        if (diffX > 0) {
+          navegarCapitulo(1); // Próximo
+        } else {
+          navegarCapitulo(-1); // Anterior
+        }
       }
     }
   });
+
+  // Pinch-to-zoom
+  reader.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const currentDistance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      
+      const scale = currentDistance / startDistance;
+      const newZoom = Math.max(50, Math.min(200, Math.round(initialZoom * scale)));
+      
+      AppState.leitor.nivelZoom = newZoom;
+      const container = document.getElementById('readerCascataContainer');
+      if (container) {
+        container.style.transform = `scale(${newZoom / 100})`;
+        container.style.transformOrigin = 'top center';
+      }
+      
+      const zoomDisplay = document.getElementById('zoomLevel');
+      if (zoomDisplay) zoomDisplay.textContent = newZoom + '%';
+    }
+  }, { passive: false });
 }
 
 function iniciarGestosAvancadosLeitor() {
-  // Implementação de pinch-to-zoom e double-tap
+  const reader = document.getElementById('readerModal');
+  if (!reader) return;
+
+  // Double-tap para zoom
+  let lastTap = 0;
+  reader.addEventListener('touchend', (e) => {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTap;
+    
+    if (tapLength < 300 && tapLength > 0) {
+      // Double tap detectado
+      if (AppState.leitor.nivelZoom === 100) {
+        ajustarZoom(50); // Zoom para 150%
+      } else {
+        AppState.leitor.nivelZoom = 100;
+        const container = document.getElementById('readerCascataContainer');
+        if (container) container.style.transform = 'scale(1)';
+        const zoomDisplay = document.getElementById('zoomLevel');
+        if (zoomDisplay) zoomDisplay.textContent = '100%';
+      }
+      e.preventDefault();
+    }
+    lastTap = currentTime;
+  });
 }
 
 function iniciarAtalhosTecladoLeitor() {
@@ -1415,27 +1891,69 @@ function iniciarAtalhosTecladoLeitor() {
 
     switch (e.key) {
       case 'ArrowRight':
+        e.preventDefault();
         navegarCapitulo(1);
         break;
       case 'ArrowLeft':
+        e.preventDefault();
         navegarCapitulo(-1);
         break;
       case '+':
       case '=':
+        e.preventDefault();
         ajustarZoom(10);
         break;
       case '-':
+        e.preventDefault();
         ajustarZoom(-10);
+        break;
+      case '0':
+        e.preventDefault();
+        AppState.leitor.nivelZoom = 100;
+        const container = document.getElementById('readerCascataContainer');
+        if (container) container.style.transform = 'scale(1)';
+        const zoomDisplay = document.getElementById('zoomLevel');
+        if (zoomDisplay) zoomDisplay.textContent = '100%';
         break;
       case 'Escape':
         fecharLeitor();
+        break;
+      case 'f':
+      case 'F':
+        e.preventDefault();
+        alternarModoImersivo();
+        break;
+      case 'r':
+      case 'R':
+        e.preventDefault();
+        inverterOrdemCapitulos();
         break;
     }
   });
 }
 
 function injetarEstiloAutoImersivo() {
-  // Injeta CSS dinâmico para modo imersivo
+  if (document.getElementById('estiloLeitorImersivo')) return;
+  
+  const style = document.createElement('style');
+  style.id = 'estiloLeitorImersivo';
+  style.textContent = `
+    .reader-modal.immersive .reader-header,
+    .reader-modal.immersive .reader-footer {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .reader-modal.immersive:hover .reader-header,
+    .reader-modal.immersive:hover .reader-footer {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .reader-modal.immersive .reader-content {
+      padding: 0;
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 /* =========================================================================
@@ -1445,6 +1963,7 @@ function injetarEstiloAutoImersivo() {
 function alternarFavorito() {
   if (!AppState.usuario.logado) {
     mostrarToast('Faça login para favoritar obras.', 'alerta');
+    fazerLogin();
     return;
   }
 
@@ -1481,26 +2000,35 @@ async function sincronizarFavoritosSupabase() {
   if (!AppState.supabase || !AppState.usuario.logado) return;
 
   try {
-    await AppState.supabase.from('user_favorites').upsert({
-      user_id: AppState.usuario.id,
-      work_ids: AppState.usuario.favoritos
-    });
+    // Deletar favoritos antigos e inserir novos
+    await AppState.supabase
+      .from('user_favorites')
+      .delete()
+      .eq('user_id', AppState.usuario.id);
+
+    if (AppState.usuario.favoritos.length > 0) {
+      const inserts = AppState.usuario.favoritos.map(workId => ({
+        user_id: AppState.usuario.id,
+        work_id: workId
+      }));
+      
+      await AppState.supabase.from('user_favorites').insert(inserts);
+    }
   } catch (err) {
     console.error('[SolitudeScan] Erro ao sincronizar favoritos:', err);
   }
 }
 
 function carregarFavoritosUsuario() {
-  // Carregar do localStorage ou Supabase
   const container = document.getElementById('favoritosContainer');
   if (!container) return;
 
   const obrasFavoritas = AppState.usuario.favoritos
-    .map(id => AppState.catalogo.obrasRemotas.find(o => String(o.id) === String(id)))
+    .map(id => encontrarObraPorId(id))
     .filter(Boolean);
 
   if (obrasFavoritas.length === 0) {
-    container.innerHTML = '<div class="empty-state"><i class="fa-regular fa-heart"></i><p>Você ainda não favoritou nenhuma obra.</p></div>';
+    container.innerHTML = '<div class="empty-state"><i class="fa-regular fa-heart"></i><p>Você ainda não favoritou nenhuma obra.</p><p class="empty-hint">Explore o catálogo e clique no coração para salvar suas obras preferidas.</p></div>';
     return;
   }
 
@@ -1522,11 +2050,10 @@ function salvarNoHistorico(obraId, capituloNumero) {
     AppState.usuario.historico.unshift(entrada);
   }
 
-  AppState.usuario.historico = AppState.usuario.historico.slice(0, 50); // Manter apenas 50 últimos
+  AppState.usuario.historico = AppState.usuario.historico.slice(0, CONFIG.MAX_HISTORICO_ITEMS);
   localStorage.setItem('solitude_historico', JSON.stringify(AppState.usuario.historico));
 
   renderizarContinueLendo();
-  renderizarAbasPerfil();
 }
 
 function carregarHistoricoUsuario() {
@@ -1535,177 +2062,49 @@ function carregarHistoricoUsuario() {
 
   const obrasHistorico = AppState.usuario.historico
     .map(h => {
-      const obra = AppState.catalogo.obrasRemotas.find(o => String(o.id) === String(h.obraId));
-      return obra ? { ...obra, ultimoCapitulo: h.capitulo } : null;
+      const obra = encontrarObraPorId(h.obraId);
+      return obra ? { ...obra, ultimoCapitulo: h.capitulo, dataLeitura: h.data } : null;
     })
     .filter(Boolean);
 
   if (obrasHistorico.length === 0) {
-    container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-clock-rotate-left"></i><p>Seu histórico de leitura está vazio.</p></div>';
+    container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-clock-rotate-left"></i><p>Seu histórico de leitura está vazio.</p><p class="empty-hint">Comece a ler e seu histórico aparecerá aqui.</p></div>';
     return;
   }
 
   container.innerHTML = obrasHistorico.map(obra => `
-    <article class="manga-card" data-id="${obra.id}" onclick="continuarLeitura('${obra.id}')">
+    <article class="manga-card" data-id="${obra.id}" onclick="continuarLeitura('${obra.id}')" tabindex="0" role="listitem">
       <div class="manga-cover">
-        <img src="${obra.capa}" alt="${escaparHtml(obra.titulo)}" loading="lazy">
+        <img src="${obra.capa}" alt="${escaparHtml(obra.titulo)}" loading="lazy" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
         <div class="continue-badge">
           <i class="fa-solid fa-bookmark"></i> Cap. ${obra.ultimoCapitulo}
         </div>
       </div>
       <div class="manga-info">
         <h3 class="manga-title">${escaparHtml(obra.titulo)}</h3>
-        <p class="continue-text">Continuar lendo</p>
+        <p class="continue-text"><i class="fa-solid fa-play"></i> Continuar lendo</p>
+        <p class="continue-date">${dataRelativa(obra.dataLeitura)}</p>
       </div>
     </article>
   `).join('');
 }
 
-/* =========================================================================
-   19. LISTAS PERSONALIZADAS
-   ========================================================================= */
-
-async function carregarListasDoUsuario() {
-  if (!AppState.supabase || !AppState.usuario.logado) {
-    AppState.listas.personalizadas = JSON.parse(localStorage.getItem('solitude_listas') || '[]');
-    return;
-  }
-
-  try {
-    const { data, error } = await AppState.supabase
-      .from('user_lists')
-      .select('*')
-      .eq('user_id', AppState.usuario.id);
-
-    if (error) throw error;
-
-    AppState.listas.personalizadas = data || [];
-    localStorage.setItem('solitude_listas', JSON.stringify(AppState.listas.personalizadas));
-  } catch (err) {
-    console.error('[SolitudeScan] Erro ao carregar listas:', err);
-  }
-}
-
-function renderizarListas() {
-  const container = document.getElementById('listasContainer');
-  if (!container) return;
-
-  if (AppState.listas.personalizadas.length === 0) {
-    container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-list"></i><p>Você não criou nenhuma lista personalizada.</p><button class="btn-primary" onclick="criarNovaLista()">Criar Lista</button></div>';
-    return;
-  }
-
-  container.innerHTML = AppState.listas.personalizadas.map(lista => `
-    <div class="lista-card">
-      <h3>${escaparHtml(lista.name)}</h3>
-      <p>${(lista.work_ids || []).length} obras</p>
-      <div class="lista-actions">
-        <button class="btn-icon" onclick="editarLista('${lista.id}')" aria-label="Editar lista">
-          <i class="fa-solid fa-pen"></i>
-        </button>
-        <button class="btn-icon" onclick="excluirLista('${lista.id}')" aria-label="Excluir lista">
-          <i class="fa-solid fa-trash"></i>
-        </button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function criarNovaLista() {
-  const nome = prompt('Nome da nova lista:');
-  if (!nome || nome.trim().length === 0) return;
-
-  const novaLista = {
-    id: 'local_' + Date.now(),
-    name: nome.trim(),
-    work_ids: [],
-    created_at: new Date().toISOString()
-  };
-
-  AppState.listas.personalizadas.push(novaLista);
-  localStorage.setItem('solitude_listas', JSON.stringify(AppState.listas.personalizadas));
-  
-  if (AppState.supabase && AppState.usuario.logado) {
-    salvarListasSupabase();
-  }
-
-  renderizarListas();
-  mostrarToast('Lista criada com sucesso!', 'sucesso');
-}
-
-async function salvarListasSupabase() {
-  if (!AppState.supabase || !AppState.usuario.logado) return;
-
-  try {
-    await AppState.supabase.from('user_lists').upsert(
-      AppState.listas.personalizadas.map(lista => ({
-        ...lista,
-        user_id: AppState.usuario.id
-      }))
-    );
-  } catch (err) {
-    console.error('[SolitudeScan] Erro ao salvar listas:', err);
-  }
-}
-
-function editarLista(listaId) {
-  AppState.listas.modalEmEdicaoId = listaId;
-  // Abrir modal de edição
-}
-
-function excluirLista(listaId) {
-  abrirConfirmacao('Excluir Lista', 'Tem certeza que deseja excluir esta lista?', () => {
-    AppState.listas.personalizadas = AppState.listas.personalizadas.filter(l => l.id !== listaId);
-    localStorage.setItem('solitude_listas', JSON.stringify(AppState.listas.personalizadas));
-    
-    if (AppState.supabase && AppState.usuario.logado) {
-      salvarListasSupabase();
-    }
-
-    renderizarListas();
-    mostrarToast('Lista excluída.', 'info');
-  });
-}
-
-function salvarLista() {
-  // Implementação de salvamento de lista
-}
-
-/* =========================================================================
-   20. ABAS DO PERFIL
-   ========================================================================= */
-
-function renderizarAbasPerfil() {
-  const tabs = document.querySelectorAll('.profile-tab-content');
-  tabs.forEach(tab => tab.classList.remove('active'));
-
-  const abaAtiva = document.getElementById('profile' + AppState.perfil.abaAtiva.charAt(0).toUpperCase() + AppState.perfil.abaAtiva.slice(1));
-  if (abaAtiva) abaAtiva.classList.add('active');
-
-  switch (AppState.perfil.abaAtiva) {
-    case 'historico':
+function limparHistorico() {
+  abrirConfirmacao(
+    'Limpar Histórico',
+    'Tem certeza que deseja limpar todo o seu histórico de leitura? Esta ação não pode ser desfeita.',
+    () => {
+      AppState.usuario.historico = [];
+      localStorage.setItem('solitude_historico', '[]');
+      renderizarContinueLendo();
       carregarHistoricoUsuario();
-      break;
-    case 'favoritos':
-      carregarFavoritosUsuario();
-      break;
-    case 'listas':
-      renderizarListas();
-      break;
-  }
-}
-
-function switchTabProfile(aba, element) {
-  AppState.perfil.abaAtiva = aba;
-  
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-  if (element) element.classList.add('active');
-
-  renderizarAbasPerfil();
+      mostrarToast('Histórico limpo com sucesso.', 'sucesso');
+    }
+  );
 }
 
 /* =========================================================================
-   21. TEMA (CLARO/ESCURO + AUTOMÁTICO POR HORÁRIO)
+   19. TEMA (CLARO/ESCURO + AUTOMÁTICO POR HORÁRIO)
    ========================================================================= */
 
 function alternarTema() {
@@ -1759,7 +2158,7 @@ function inicializarBotaoTema() {
 }
 
 /* =========================================================================
-   22. COOKIE BANNER LGPD
+   20. COOKIE BANNER LGPD
    ========================================================================= */
 
 function aceitarCookies() {
@@ -1782,7 +2181,7 @@ function mostrarBannerCookies() {
 }
 
 /* =========================================================================
-   23. SINCRONIZAÇÃO DE SESSÃO ENTRE ABAS
+   21. SINCRONIZAÇÃO DE SESSÃO ENTRE ABAS
    ========================================================================= */
 
 function ativarSincronizacaoSessao() {
@@ -1804,7 +2203,7 @@ function ativarSincronizacaoSessao() {
 }
 
 /* =========================================================================
-   24. SISTEMA DE COMENTÁRIOS E MODERAÇÃO
+   22. SISTEMA DE COMENTÁRIOS E MODERAÇÃO (COMPLETO)
    ========================================================================= */
 
 async function carregarComentarios(obraId) {
@@ -1815,10 +2214,12 @@ async function carregarComentarios(obraId) {
       .from('comments')
       .select(`
         *,
-        profiles:user_id (full_name, avatar_url)
+        profiles:user_id (id, full_name, avatar_url, is_admin)
       `)
       .eq('work_id', obraId)
-      .order('created_at', { ascending: false });
+      .eq('is_hidden', false)
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     if (error) throw error;
     
@@ -1826,13 +2227,15 @@ async function carregarComentarios(obraId) {
     return data || [];
   } catch (err) {
     console.error('[SolitudeScan] Erro ao carregar comentários:', err);
+    AppState.comentarios.cache[obraId] = [];
     return [];
   }
 }
 
-async function adicionarComentario(obraId, texto, comentarioPaiId = null) {
+async function adicionarComentario(obraId, texto, comentarioPaiId = null, isSpoiler = false) {
   if (!AppState.usuario.logado) {
     mostrarToast('Faça login para comentar.', 'alerta');
+    fazerLogin();
     return;
   }
 
@@ -1841,13 +2244,13 @@ async function adicionarComentario(obraId, texto, comentarioPaiId = null) {
     return;
   }
 
-  if (texto.length > 500) {
-    mostrarToast('Comentário muito longo. Máximo de 500 caracteres.', 'alerta');
+  if (texto.length > CONFIG.MAX_COMENTARIO_LENGTH) {
+    mostrarToast('Comentário muito longo. Máximo de ' + CONFIG.MAX_COMENTARIO_LENGTH + ' caracteres.', 'alerta');
     return;
   }
 
   const agora = Date.now();
-  if (agora - AppState.comentarios.ultimoComentarioEm < 5000) {
+  if (agora - AppState.comentarios.ultimoComentarioEm < CONFIG.RATE_LIMIT_COMENTARIO) {
     mostrarToast('Aguarde alguns segundos antes de comentar novamente.', 'alerta');
     return;
   }
@@ -1862,7 +2265,8 @@ async function adicionarComentario(obraId, texto, comentarioPaiId = null) {
       work_id: obraId,
       user_id: AppState.usuario.id,
       content: texto.trim(),
-      parent_id: comentarioPaiId
+      parent_id: comentarioPaiId,
+      is_spoiler: isSpoiler
     });
 
     if (error) throw error;
@@ -1870,10 +2274,51 @@ async function adicionarComentario(obraId, texto, comentarioPaiId = null) {
     AppState.comentarios.ultimoComentarioEm = agora;
     AppState.comentarios.responderAComentarioId = null;
     mostrarToast('Comentário publicado!', 'sucesso');
-    carregarComentarios(obraId);
+    
+    await carregarComentarios(obraId);
+    renderizarComentarios(obraId);
   } catch (err) {
     console.error('[SolitudeScan] Erro ao publicar comentário:', err);
     mostrarToast('Falha ao publicar comentário.', 'erro');
+  }
+}
+
+async function curtirComentario(comentarioId, obraId) {
+  if (!AppState.usuario.logado) {
+    mostrarToast('Faça login para curtir comentários.', 'alerta');
+    return;
+  }
+
+  if (!AppState.supabase) return;
+
+  try {
+    const { data: existente } = await AppState.supabase
+      .from('comment_likes')
+      .select('id')
+      .eq('user_id', AppState.usuario.id)
+      .eq('comment_id', comentarioId)
+      .single();
+
+    if (existente) {
+      await AppState.supabase
+        .from('comment_likes')
+        .delete()
+        .eq('id', existente.id);
+      mostrarToast('Curtida removida.', 'info', 2000);
+    } else {
+      await AppState.supabase
+        .from('comment_likes')
+        .insert({
+          user_id: AppState.usuario.id,
+          comment_id: comentarioId
+        });
+      mostrarToast('Comentário curtido!', 'sucesso', 2000);
+    }
+
+    await carregarComentarios(obraId);
+    renderizarComentarios(obraId);
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao curtir:', err);
   }
 }
 
@@ -1885,7 +2330,7 @@ async function denunciarComentario(comentarioId) {
 
   abrirConfirmacao(
     'Denunciar Comentário',
-    'Tem certeza que deseja denunciar este comentário por conteúdo inadequado?',
+    'Tem certeza que deseja denunciar este comentário por conteúdo inadequado? Nossa equipe irá analisar.',
     async () => {
       if (!AppState.supabase) return;
       
@@ -1894,7 +2339,8 @@ async function denunciarComentario(comentarioId) {
           reporter_id: AppState.usuario.id,
           target_type: 'comment',
           target_id: comentarioId,
-          status: 'pendente'
+          status: 'pendente',
+          created_at: new Date().toISOString()
         });
         mostrarToast('Denúncia enviada. Nossa equipe irá analisar.', 'sucesso');
       } catch (err) {
@@ -1903,6 +2349,27 @@ async function denunciarComentario(comentarioId) {
       }
     }
   );
+}
+
+async function excluirComentario(comentarioId, obraId) {
+  if (!AppState.supabase) return;
+
+  try {
+    const { error } = await AppState.supabase
+      .from('comments')
+      .delete()
+      .eq('id', comentarioId)
+      .eq('user_id', AppState.usuario.id);
+
+    if (error) throw error;
+
+    mostrarToast('Comentário excluído.', 'sucesso');
+    await carregarComentarios(obraId);
+    renderizarComentarios(obraId);
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao excluir:', err);
+    mostrarToast('Falha ao excluir comentário.', 'erro');
+  }
 }
 
 function renderizarComentarios(obraId) {
@@ -1916,32 +2383,55 @@ function renderizarComentarios(obraId) {
     return;
   }
 
-  container.innerHTML = comentarios.map(com => {
-    const autor = com.profiles || {};
-    const nomeAutor = escaparHtml(autor.full_name || 'Usuário');
-    const avatar = autor.avatar_url || PLACEHOLDERS.AVATAR_SVG;
-    
-    return `
-      <div class="comment-item" data-id="${com.id}">
-        <img src="${avatar}" alt="Avatar" class="comment-avatar" onerror="this.src='${PLACEHOLDERS.AVATAR_SVG}'">
-        <div class="comment-body">
-          <div class="comment-header">
-            <strong>${nomeAutor}</strong>
-            <span class="comment-time">${dataRelativa(com.created_at)}</span>
-          </div>
-          <p class="comment-text">${escaparHtml(com.content)}</p>
-          <div class="comment-actions">
-            <button class="btn-text" onclick="responderComentario('${com.id}')">
-              <i class="fa-solid fa-reply"></i> Responder
-            </button>
-            <button class="btn-text" onclick="denunciarComentario('${com.id}')">
-              <i class="fa-solid fa-flag"></i> Denunciar
-            </button>
-          </div>
+  // Agrupar comentários por pai (threads)
+  const raizes = comentarios.filter(c => !c.parent_id);
+  
+  container.innerHTML = raizes.map(com => renderizarComentarioThread(com, comentarios, obraId, 0)).join('');
+}
+
+function renderizarComentarioThread(comentario, todosComentarios, obraId, nivel) {
+  const autor = comentario.profiles || {};
+  const nomeAutor = escaparHtml(autor.full_name || 'Usuário');
+  const avatar = autor.avatar_url || PLACEHOLDERS.AVATAR_SVG;
+  const isAdmin = !!autor.is_admin;
+  const ehDono = AppState.usuario.id === autor.id;
+  const podeExcluir = ehDono || AppState.usuario.isAdmin;
+  
+  const respostas = todosComentarios.filter(c => c.parent_id === comentario.id);
+  const spoilerClass = comentario.is_spoiler ? 'spoiler-content' : '';
+  
+  const adminBadge = isAdmin ? '<span class="admin-badge"><i class="fa-solid fa-shield"></i> Admin</span>' : '';
+  
+  const html = `
+    <div class="comment-item ${nivel > 0 ? 'comment-reply' : ''} ${spoilerClass}" data-id="${comentario.id}">
+      <img src="${avatar}" alt="Avatar" class="comment-avatar" onerror="this.src='${PLACEHOLDERS.AVATAR_SVG}'">
+      <div class="comment-body">
+        <div class="comment-header">
+          <strong>${nomeAutor}</strong>
+          ${adminBadge}
+          <span class="comment-time">${dataRelativa(comentario.created_at)}</span>
+        </div>
+        <p class="comment-text">${comentario.is_spoiler ? '<span class="spoiler-warning"><i class="fa-solid fa-eye-slash"></i> Spoiler</span>' : ''}${escaparHtml(comentario.content)}</p>
+        <div class="comment-actions">
+          ${nivel < 3 ? `<button class="btn-text" onclick="responderComentario('${comentario.id}')"><i class="fa-solid fa-reply"></i> Responder</button>` : ''}
+          <button class="btn-text" onclick="denunciarComentario('${comentario.id}')"><i class="fa-solid fa-flag"></i> Denunciar</button>
+          ${podeExcluir ? `<button class="btn-text danger" onclick="confirmarExclusaoComentario('${comentario.id}', '${obraId}')"><i class="fa-solid fa-trash"></i> Excluir</button>` : ''}
         </div>
       </div>
-    `;
-  }).join('');
+    </div>
+  `;
+
+  const respostasHtml = respostas.map(r => renderizarComentarioThread(r, todosComentarios, obraId, nivel + 1)).join('');
+  
+  return html + respostasHtml;
+}
+
+function confirmarExclusaoComentario(comentarioId, obraId) {
+  abrirConfirmacao(
+    'Excluir Comentário',
+    'Tem certeza que deseja excluir este comentário? Esta ação não pode ser desfeita.',
+    () => excluirComentario(comentarioId, obraId)
+  );
 }
 
 function responderComentario(comentarioId) {
@@ -1970,7 +2460,7 @@ function garantirCheckboxSpoiler() {
 }
 
 /* =========================================================================
-   25. SISTEMA DE NOTIFICAÇÕES
+   23. SISTEMA DE NOTIFICAÇÕES (COMPLETO)
    ========================================================================= */
 
 async function carregarNotificacoes() {
@@ -1981,7 +2471,6 @@ async function carregarNotificacoes() {
       .from('notifications')
       .select('*')
       .eq('user_id', AppState.usuario.id)
-      .eq('read', false)
       .order('created_at', { ascending: false })
       .limit(20);
 
@@ -1997,10 +2486,73 @@ async function carregarNotificacoes() {
 function atualizarBadgeNotificacoes() {
   const badge = document.getElementById('notifBadge');
   if (badge) {
-    const count = AppState.notificacoes.lista.length;
-    badge.textContent = count > 0 ? count : '';
-    badge.style.display = count > 0 ? 'flex' : 'none';
+    const naoLidas = AppState.notificacoes.lista.filter(n => !n.read).length;
+    badge.textContent = naoLidas > 0 ? (naoLidas > 9 ? '9+' : naoLidas) : '';
+    badge.style.display = naoLidas > 0 ? 'flex' : 'none';
   }
+}
+
+function toggleDropdownNotificacoes() {
+  const dropdown = document.getElementById('notifDropdown');
+  if (!dropdown) return;
+
+  AppState.notificacoes.dropdownAberto = !AppState.notificacoes.dropdownAberto;
+  dropdown.classList.toggle('active', AppState.notificacoes.dropdownAberto);
+
+  if (AppState.notificacoes.dropdownAberto) {
+    renderizarListaNotificacoes();
+  }
+}
+
+function renderizarListaNotificacoes() {
+  const container = document.getElementById('notifList');
+  if (!container) return;
+
+  if (AppState.notificacoes.lista.length === 0) {
+    container.innerHTML = '<div class="notif-empty"><i class="fa-regular fa-bell"></i><p>Nenhuma notificação.</p></div>';
+    return;
+  }
+
+  container.innerHTML = AppState.notificacoes.lista.map(notif => {
+    const icones = {
+      'novo_capitulo': 'fa-book',
+      'resposta_comentario': 'fa-reply',
+      'curtida': 'fa-heart',
+      'sistema': 'fa-info-circle',
+      'vip': 'fa-crown'
+    };
+    const icone = icones[notif.type] || 'fa-bell';
+    const lida = notif.read ? 'read' : '';
+
+    return `
+      <div class="notif-item ${lida}" data-id="${notif.id}" onclick="abrirNotificacao('${notif.id}')">
+        <div class="notif-icon">
+          <i class="fa-solid ${icone}"></i>
+        </div>
+        <div class="notif-content">
+          <p class="notif-text">${escaparHtml(notif.message)}</p>
+          <span class="notif-time">${dataRelativa(notif.created_at)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function abrirNotificacao(notifId) {
+  const notif = AppState.notificacoes.lista.find(n => n.id === notifId);
+  if (!notif) return;
+
+  if (!notif.read) {
+    await marcarNotificacaoComoLida(notifId);
+  }
+
+  if (notif.action_url) {
+    window.location.href = notif.action_url;
+  } else if (notif.work_id) {
+    abrirDetalhesObra(notif.work_id);
+  }
+
+  toggleDropdownNotificacoes();
 }
 
 async function marcarNotificacaoComoLida(notifId) {
@@ -2012,20 +2564,43 @@ async function marcarNotificacaoComoLida(notifId) {
       .update({ read: true })
       .eq('id', notifId);
 
-    AppState.notificacoes.lista = AppState.notificacoes.lista.filter(n => n.id !== notifId);
+    const notif = AppState.notificacoes.lista.find(n => n.id === notifId);
+    if (notif) notif.read = true;
+    
     atualizarBadgeNotificacoes();
+    renderizarListaNotificacoes();
   } catch (err) {
     console.error('[SolitudeScan] Erro ao marcar notificação:', err);
   }
 }
 
+async function marcarTodasNotificacoesComoLidas() {
+  if (!AppState.supabase) return;
+
+  try {
+    await AppState.supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', AppState.usuario.id)
+      .eq('read', false);
+
+    AppState.notificacoes.lista.forEach(n => n.read = true);
+    atualizarBadgeNotificacoes();
+    renderizarListaNotificacoes();
+    mostrarToast('Todas as notificações marcadas como lidas.', 'sucesso');
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao marcar todas:', err);
+  }
+}
+
 /* =========================================================================
-   26. AVALIAÇÃO DE OBRAS
+   24. AVALIAÇÃO DE OBRAS (SISTEMA DE ESTRELAS COMPLETO)
    ========================================================================= */
 
 async function avaliarObra(obraId, nota) {
   if (!AppState.usuario.logado) {
     mostrarToast('Faça login para avaliar obras.', 'alerta');
+    fazerLogin();
     return;
   }
 
@@ -2049,7 +2624,12 @@ async function avaliarObra(obraId, nota) {
     });
 
     mostrarToast('Avaliação registrada! Obrigado pelo feedback.', 'sucesso');
-    carregarObras();
+    
+    // Recarregar dados da obra para atualizar a média
+    await carregarObras();
+    
+    // Reabrir detalhes para mostrar a nova avaliação
+    abrirDetalhesObra(obraId);
   } catch (err) {
     console.error('[SolitudeScan] Erro ao avaliar:', err);
     mostrarToast('Falha ao registrar avaliação.', 'erro');
@@ -2057,12 +2637,12 @@ async function avaliarObra(obraId, nota) {
 }
 
 /* =========================================================================
-   27. COMPARTILHAMENTO
+   25. COMPARTILHAMENTO (AVANÇADO COM WEB SHARE API)
    ========================================================================= */
 
 function compartilharObraAtual() {
   const obraId = AppState.leitor.obraAtualId;
-  const obra = AppState.catalogo.obrasRemotas.find(o => String(o.id) === String(obraId));
+  const obra = encontrarObraPorId(obraId);
   
   if (!obra) {
     mostrarToast('Nenhuma obra selecionada.', 'alerta');
@@ -2077,18 +2657,72 @@ function compartilharObraAtual() {
       title: obra.titulo,
       text: texto,
       url: url
-    }).catch(() => {});
-  } else {
-    navigator.clipboard.writeText(url).then(() => {
-      mostrarToast('Link copiado! Compartilhe com seus amigos.', 'sucesso');
+    }).then(() => {
+      mostrarToast('Obra compartilhada!', 'sucesso');
     }).catch(() => {
-      mostrarToast('Não foi possível copiar o link.', 'erro');
+      // Usuário cancelou ou falhou, tentar copiar
+      copiarLinkObra(obra, url);
     });
+  } else {
+    copiarLinkObra(obra, url);
   }
 }
 
+function copiarLinkObra(obra, url) {
+  if (!url) {
+    url = window.location.origin + '/?obra=' + encodeURIComponent(obra.id);
+  }
+
+  navigator.clipboard.writeText(url).then(() => {
+    mostrarToast('Link copiado! Compartilhe com seus amigos.', 'sucesso');
+  }).catch(() => {
+    // Fallback para navegadores antigos
+    const input = document.createElement('input');
+    input.value = url;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    mostrarToast('Link copiado!', 'sucesso');
+  });
+}
+
+function compartilharViaRedeSocial(rede) {
+  const obraId = AppState.leitor.obraAtualId;
+  const obra = encontrarObraPorId(obraId);
+  
+  if (!obra) {
+    mostrarToast('Nenhuma obra selecionada.', 'alerta');
+    return;
+  }
+
+  const url = encodeURIComponent(window.location.origin + '/?obra=' + encodeURIComponent(obra.id));
+  const texto = encodeURIComponent('Confira "' + obra.titulo + '" no SolitudeScan!');
+
+  let shareUrl = '';
+  
+  switch (rede) {
+    case 'twitter':
+      shareUrl = 'https://twitter.com/intent/tweet?text=' + texto + '&url=' + url;
+      break;
+    case 'facebook':
+      shareUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + url;
+      break;
+    case 'whatsapp':
+      shareUrl = 'https://wa.me/?text=' + texto + '%20' + url;
+      break;
+    case 'telegram':
+      shareUrl = 'https://t.me/share/url?url=' + url + '&text=' + texto;
+      break;
+    default:
+      return;
+  }
+
+  window.open(shareUrl, '_blank', 'width=600,height=400');
+}
+
 /* =========================================================================
-   28. EXPORTAÇÃO DE DADOS DO USUÁRIO (LGPD)
+   26. EXPORTAÇÃO DE DADOS DO USUÁRIO (LGPD)
    ========================================================================= */
 
 function exportarDadosUsuario() {
@@ -2123,7 +2757,230 @@ function exportarDadosUsuario() {
 }
 
 /* =========================================================================
-   29. MODAIS VIP E FLUXO PIX
+   27. LISTAS PERSONALIZADAS (CRUD COMPLETO)
+   ========================================================================= */
+
+async function carregarListasDoUsuario() {
+  if (!AppState.supabase || !AppState.usuario.logado) {
+    try {
+      AppState.listas.personalizadas = JSON.parse(localStorage.getItem('solitude_listas') || '[]');
+    } catch (e) {
+      AppState.listas.personalizadas = [];
+    }
+    return;
+  }
+
+  try {
+    const { data, error } = await AppState.supabase
+      .from('user_lists')
+      .select('*')
+      .eq('user_id', AppState.usuario.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    AppState.listas.personalizadas = data || [];
+    localStorage.setItem('solitude_listas', JSON.stringify(AppState.listas.personalizadas));
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao carregar listas:', err);
+  }
+}
+
+function renderizarListas() {
+  const container = document.getElementById('listasContainer');
+  if (!container) return;
+
+  if (AppState.listas.personalizadas.length === 0) {
+    container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-list"></i><p>Você não criou nenhuma lista personalizada.</p><button class="btn-primary" onclick="criarNovaLista()">Criar Lista</button></div>';
+    return;
+  }
+
+  container.innerHTML = AppState.listas.personalizadas.map(lista => {
+    const obrasNaLista = (lista.work_ids || []).length;
+    return `
+      <div class="lista-card">
+        <div class="lista-header">
+          <h3>${escaparHtml(lista.name)}</h3>
+          <span class="lista-count">${obrasNaLista} ${obrasNaLista === 1 ? 'obra' : 'obras'}</span>
+        </div>
+        <div class="lista-actions">
+          <button class="btn-icon" onclick="verLista('${lista.id}')" aria-label="Ver lista" title="Ver">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+          <button class="btn-icon" onclick="editarLista('${lista.id}')" aria-label="Editar lista" title="Editar">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button class="btn-icon" onclick="excluirLista('${lista.id}')" aria-label="Excluir lista" title="Excluir">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function criarNovaLista() {
+  const nome = prompt('Nome da nova lista:');
+  if (!nome || nome.trim().length === 0) return;
+
+  if (nome.trim().length > 50) {
+    mostrarToast('Nome muito longo. Máximo 50 caracteres.', 'alerta');
+    return;
+  }
+
+  const novaLista = {
+    id: 'local_' + Date.now(),
+    name: nome.trim(),
+    work_ids: [],
+    created_at: new Date().toISOString(),
+    user_id: AppState.usuario.id
+  };
+
+  AppState.listas.personalizadas.push(novaLista);
+  salvarListas();
+  
+  renderizarListas();
+  mostrarToast('Lista criada com sucesso!', 'sucesso');
+}
+
+async function salvarListas() {
+  localStorage.setItem('solitude_listas', JSON.stringify(AppState.listas.personalizadas));
+
+  if (AppState.supabase && AppState.usuario.logado) {
+    try {
+      await AppState.supabase.from('user_lists').upsert(
+        AppState.listas.personalizadas.map(lista => ({
+          ...lista,
+          user_id: AppState.usuario.id
+        }))
+      );
+    } catch (err) {
+      console.error('[SolitudeScan] Erro ao salvar listas:', err);
+    }
+  }
+}
+
+function editarLista(listaId) {
+  const lista = AppState.listas.personalizadas.find(l => l.id === listaId);
+  if (!lista) return;
+
+  const novoNome = prompt('Novo nome da lista:', lista.name);
+  if (!novoNome || novoNome.trim().length === 0) return;
+
+  lista.name = novoNome.trim();
+  salvarListas();
+  renderizarListas();
+  mostrarToast('Lista atualizada.', 'sucesso');
+}
+
+function excluirLista(listaId) {
+  abrirConfirmacao(
+    'Excluir Lista',
+    'Tem certeza que deseja excluir esta lista? As obras não serão excluídas do catálogo.',
+    async () => {
+      AppState.listas.personalizadas = AppState.listas.personalizadas.filter(l => l.id !== listaId);
+      salvarListas();
+      renderizarListas();
+      mostrarToast('Lista excluída.', 'info');
+    }
+  );
+}
+
+function verLista(listaId) {
+  const lista = AppState.listas.personalizadas.find(l => l.id === listaId);
+  if (!lista) return;
+
+  const obrasNaLista = (lista.work_ids || [])
+    .map(id => encontrarObraPorId(id))
+    .filter(Boolean);
+
+  if (obrasNaLista.length === 0) {
+    mostrarToast('Esta lista está vazia.', 'info');
+    return;
+  }
+
+  // Abrir modal com as obras da lista
+  const modal = document.getElementById('listaObrasModal');
+  if (modal) {
+    const body = modal.querySelector('.modal-body');
+    if (body) {
+      body.innerHTML = `
+        <h3>${escaparHtml(lista.name)}</h3>
+        <div class="lista-obras-grid">
+          ${obrasNaLista.map(obra => criarCardObra(obra)).join('')}
+        </div>
+      `;
+    }
+    toggleModal('listaObrasModal');
+  }
+}
+
+function adicionarObraALista(obraId, listaId) {
+  const lista = AppState.listas.personalizadas.find(l => l.id === listaId);
+  if (!lista) return;
+
+  if (!lista.work_ids) lista.work_ids = [];
+
+  if (lista.work_ids.includes(String(obraId))) {
+    mostrarToast('Esta obra já está na lista.', 'info');
+    return;
+  }
+
+  lista.work_ids.push(String(obraId));
+  salvarListas();
+  mostrarToast('Obra adicionada à lista "' + lista.name + '".', 'sucesso');
+}
+
+function removerObraDaLista(obraId, listaId) {
+  const lista = AppState.listas.personalizadas.find(l => l.id === listaId);
+  if (!lista) return;
+
+  lista.work_ids = (lista.work_ids || []).filter(id => id !== String(obraId));
+  salvarListas();
+  mostrarToast('Obra removida da lista.', 'info');
+}
+
+function salvarLista() {
+  // Função wrapper para compatibilidade
+  salvarListas();
+}
+
+/* =========================================================================
+   28. ABAS DO PERFIL
+   ========================================================================= */
+
+function renderizarAbasPerfil() {
+  const tabs = document.querySelectorAll('.profile-tab-content');
+  tabs.forEach(tab => tab.classList.remove('active'));
+
+  const abaAtiva = document.getElementById('profile' + AppState.perfil.abaAtiva.charAt(0).toUpperCase() + AppState.perfil.abaAtiva.slice(1));
+  if (abaAtiva) abaAtiva.classList.add('active');
+
+  switch (AppState.perfil.abaAtiva) {
+    case 'historico':
+      carregarHistoricoUsuario();
+      break;
+    case 'favoritos':
+      carregarFavoritosUsuario();
+      break;
+    case 'listas':
+      carregarListasDoUsuario().then(() => renderizarListas());
+      break;
+  }
+}
+
+function switchTabProfile(aba, element) {
+  AppState.perfil.abaAtiva = aba;
+  
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  if (element) element.classList.add('active');
+
+  renderizarAbasPerfil();
+}
+
+
+/* =========================================================================
+   29. MODAIS VIP E FLUXO PIX (COMPLETO)
    ========================================================================= */
 
 function abrirModalVip() {
@@ -2131,6 +2988,11 @@ function abrirModalVip() {
 }
 
 function abrirModalPix(plano, valor) {
+  if (!plano || !CONFIG.PLANOS_DURACAO[plano]) {
+    mostrarToast('Plano inválido. Selecione um plano válido.', 'erro');
+    return;
+  }
+
   AppState.pix.planoAtual = { plano, valor };
   AppState.pix.expirado = false;
   AppState.pix.solicitacaoAtual = null;
@@ -2164,6 +3026,12 @@ function abrirModalPix(plano, valor) {
     nomeInput.value = AppState.usuario.nome;
   }
 
+  // Fechar vipModal se estiver aberto
+  const vipModal = document.getElementById('vipModal');
+  if (vipModal && vipModal.classList.contains('active')) {
+    toggleModal('vipModal');
+  }
+
   toggleModal('pixModal');
 }
 
@@ -2179,6 +3047,10 @@ async function gerarCobrancaPix(e) {
 
   if (nome.length < 2) {
     mostrarToast('Informe seu nome para a conferência do pagamento.', 'alerta');
+    return;
+  }
+  if (nome.length > 100) {
+    mostrarToast('Nome muito longo. Máximo 100 caracteres.', 'alerta');
     return;
   }
   if (!validarEmail(email)) {
@@ -2198,7 +3070,8 @@ async function gerarCobrancaPix(e) {
         valor: AppState.pix.planoAtual.valor,
         metodo: 'pix',
         status: 'pendente',
-        expires_at: expiraEm
+        expires_at: expiraEm,
+        user_id: AppState.usuario.id || null
       }]).select().single();
       
       if (!error && data) idSolicitacao = data.id;
@@ -2207,7 +3080,14 @@ async function gerarCobrancaPix(e) {
     }
   }
 
-  AppState.pix.solicitacaoAtual = { id: idSolicitacao, nome: nome, email: email, expiraEm: expiraEm };
+  AppState.pix.solicitacaoAtual = { 
+    id: idSolicitacao, 
+    nome: nome, 
+    email: email, 
+    expiraEm: expiraEm,
+    plano: AppState.pix.planoAtual.plano,
+    valor: AppState.pix.planoAtual.valor
+  };
   
   const passoDados = document.getElementById('pixPassoDados');
   const passoPagamento = document.getElementById('pixPassoPagamento');
@@ -2242,7 +3122,16 @@ function iniciarTimerPix() {
       if (btn) btn.disabled = true;
       const msg = document.getElementById('pixMsgExpirado');
       if (msg) msg.style.display = 'block';
-      mostrarToast('Tempo esgotado! O pagamento não foi confirmado.', 'erro', 6000);
+      mostrarToast('Tempo esgotado! O pagamento não foi confirmado e a solicitação foi cancelada.', 'erro', 6000);
+      
+      // Marcar como expirado no Supabase
+      if (AppState.supabase && AppState.pix.solicitacaoAtual.id) {
+        AppState.supabase
+          .from('payment_requests')
+          .update({ status: 'expirado' })
+          .eq('id', AppState.pix.solicitacaoAtual.id)
+          .then(() => {});
+      }
       return;
     }
 
@@ -2262,25 +3151,50 @@ function pararTimerPix() {
 
 function copiarChavePix() {
   navigator.clipboard.writeText(CONFIG.CHAVE_PIX).then(() => {
-    mostrarToast('Chave Pix copiada! Cole no aplicativo do seu banco.', 'sucesso');
+    mostrarToast('Chave Pix copiada! Cole no aplicativo do seu banco para pagar.', 'sucesso');
   }).catch(() => {
-    mostrarToast('Não foi possível copiar. Chave: ' + CONFIG.CHAVE_PIX, 'info');
+    // Fallback
+    const input = document.createElement('input');
+    input.value = CONFIG.CHAVE_PIX;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    mostrarToast('Chave Pix: ' + CONFIG.CHAVE_PIX, 'info', 6000);
   });
 }
 
 function concluirPagamentoPix() {
   if (AppState.pix.expirado) {
-    mostrarToast('Esta cobrança expirou. Feche e gere uma nova.', 'erro');
+    mostrarToast('Esta cobrança expirou. Feche e gere uma nova solicitação de pagamento.', 'erro');
+    return;
+  }
+
+  if (!AppState.pix.solicitacaoAtual) {
+    mostrarToast('Nenhuma cobrança ativa.', 'erro');
     return;
   }
 
   pararTimerPix();
+
+  // Marcar como "aguardando_confirmacao" no Supabase
+  if (AppState.supabase && AppState.pix.solicitacaoAtual.id) {
+    AppState.supabase
+      .from('payment_requests')
+      .update({ 
+        status: 'aguardando_confirmacao',
+        confirmed_at: new Date().toISOString()
+      })
+      .eq('id', AppState.pix.solicitacaoAtual.id)
+      .then(() => {});
+  }
+
   toggleModal('pixModal');
-  mostrarToast('Pagamento informado! A administração vai conferir e o VIP será ativado automaticamente.', 'sucesso', 8000);
+  mostrarToast('Pagamento informado! A administração vai conferir o Pix no banco e o VIP será ativado automaticamente no seu e-mail assim que a conferência for concluída.', 'sucesso', 8000);
 }
 
 /* =========================================================================
-   30. PAINEL ADMINISTRATIVO
+   30. PAINEL ADMINISTRATIVO — VISÃO GERAL
    ========================================================================= */
 
 function abrirPainelAdmin() {
@@ -2289,6 +3203,449 @@ function abrirPainelAdmin() {
     return;
   }
   toggleModal('adminModal');
+  carregarDadosAdmin();
+}
+
+async function carregarDadosAdmin() {
+  if (!AppState.supabase || !AppState.usuario.isAdmin) return;
+
+  try {
+    // Carregar estatísticas em paralelo
+    const [obrasRes, usersRes, pagamentosRes, denunciasRes] = await Promise.all([
+      AppState.supabase.from('works').select('id', { count: 'exact', head: true }),
+      AppState.supabase.from('profiles').select('id', { count: 'exact', head: true }),
+      AppState.supabase.from('payment_requests').select('id', { count: 'exact', head: true }).eq('status', 'pendente'),
+      AppState.supabase.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pendente')
+    ]);
+
+    atualizarEstatisticasAdmin({
+      obras: obrasRes.count || 0,
+      usuarios: usersRes.count || 0,
+      pagamentosPendentes: pagamentosRes.count || 0,
+      denunciasPendentes: denunciasRes.count || 0
+    });
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao carregar dados admin:', err);
+  }
+}
+
+function atualizarEstatisticasAdmin(stats) {
+  const els = {
+    'adminStatObras': stats.obras,
+    'adminStatUsuarios': stats.usuarios,
+    'adminStatPagamentos': stats.pagamentosPendentes,
+    'adminStatDenuncias': stats.denunciasPendentes
+  };
+
+  Object.entries(els).forEach(([id, valor]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = valor;
+  });
+}
+
+function trocarAbaAdmin(aba) {
+  document.querySelectorAll('.admin-tab-content').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
+
+  const target = document.getElementById('adminTab' + aba.charAt(0).toUpperCase() + aba.slice(1));
+  if (target) target.classList.add('active');
+
+  const btn = document.querySelector(`.admin-tab-btn[data-tab="${aba}"]`);
+  if (btn) btn.classList.add('active');
+
+  switch (aba) {
+    case 'obras':
+      carregarObrasAdmin();
+      break;
+    case 'usuarios':
+      carregarUsuariosAdmin();
+      break;
+    case 'pagamentos':
+      carregarPagamentosAdmin();
+      break;
+    case 'denuncias':
+      carregarDenunciasAdmin();
+      break;
+  }
+}
+
+/* =========================================================================
+   31. ADMIN — CRUD DE OBRAS
+   ========================================================================= */
+
+async function carregarObrasAdmin() {
+  if (!AppState.supabase || !AppState.usuario.isAdmin) return;
+
+  const container = document.getElementById('adminObrasLista');
+  if (!container) return;
+
+  container.innerHTML = '<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Carregando obras...</div>';
+
+  try {
+    const { data, error } = await AppState.supabase
+      .from('works')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    AppState.modais.listaObras = data || [];
+
+    if (AppState.modais.listaObras.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhuma obra cadastrada.</p></div>';
+      return;
+    }
+
+    container.innerHTML = AppState.modais.listaObras.map(obra => `
+      <div class="admin-item" data-id="${obra.id}">
+        <img src="${obra.cover_url || PLACEHOLDERS.CAPA_PLACEHOLDER}" alt="${escaparHtml(obra.title)}" class="admin-item-cover" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
+        <div class="admin-item-info">
+          <h4>${escaparHtml(obra.title)}</h4>
+          <p>${escaparHtml(obra.author || 'Autor desconhecido')} • ${escaparHtml(obra.status || 'Em Lançamento')}</p>
+          <span class="admin-item-meta">${obra.views || 0} visualizações • ${obra.rating || 0}★</span>
+        </div>
+        <div class="admin-item-actions">
+          <button class="btn-icon" onclick="editarObraAdmin('${obra.id}')" aria-label="Editar obra" title="Editar">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button class="btn-icon danger" onclick="confirmarExclusaoObra('${obra.id}')" aria-label="Excluir obra" title="Excluir">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    AppState.admin.obrasCarregadas = true;
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao carregar obras admin:', err);
+    container.innerHTML = '<div class="error-state"><p>Falha ao carregar obras.</p></div>';
+  }
+}
+
+function abrirFormularioObra(obraId = null) {
+  if (!AppState.usuario.isAdmin) return;
+
+  AppState.admin.editandoObraId = obraId;
+  const modal = document.getElementById('adminObraFormModal');
+  if (!modal) return;
+
+  const form = document.getElementById('adminObraForm');
+  if (form) form.reset();
+
+  const titulo = document.getElementById('adminObraFormTitulo');
+  if (titulo) titulo.textContent = obraId ? 'Editar Obra' : 'Nova Obra';
+
+  if (obraId) {
+    const obra = AppState.modais.listaObras.find(o => o.id === obraId);
+    if (obra) {
+      document.getElementById('admObraTitulo').value = obra.title || '';
+      document.getElementById('admObraAutor').value = obra.author || '';
+      document.getElementById('admObraArtista').value = obra.artist || '';
+      document.getElementById('admObraSinopse').value = obra.description || '';
+      document.getElementById('admObraStatus').value = obra.status || 'Em Lançamento';
+      document.getElementById('admObraTipo').value = obra.type || 'Manhwa';
+      document.getElementById('admObraExclusivo').checked = !!obra.is_exclusive;
+      document.getElementById('admObraAdulto').checked = !!obra.is_adult;
+      document.getElementById('admObraDestaque').checked = !!obra.is_featured;
+    }
+  }
+
+  toggleModal('adminObraFormModal');
+}
+
+async function salvarObraAdmin(e) {
+  e.preventDefault();
+  if (!AppState.usuario.isAdmin) return;
+
+  const dados = {
+    title: document.getElementById('admObraTitulo').value.trim(),
+    author: document.getElementById('admObraAutor').value.trim(),
+    artist: document.getElementById('admObraArtista').value.trim(),
+    description: document.getElementById('admObraSinopse').value.trim(),
+    status: document.getElementById('admObraStatus').value,
+    type: document.getElementById('admObraTipo').value,
+    is_exclusive: document.getElementById('admObraExclusivo').checked,
+    is_adult: document.getElementById('admObraAdulto').checked,
+    is_featured: document.getElementById('admObraDestaque').checked
+  };
+
+  if (!dados.title || dados.title.length < 2) {
+    mostrarToast('Título obrigatório (mínimo 2 caracteres).', 'alerta');
+    return;
+  }
+
+  if (dados.title.length > 200) {
+    mostrarToast('Título muito longo. Máximo 200 caracteres.', 'alerta');
+    return;
+  }
+
+  // Upload de capa (se houver)
+  const capaInput = document.getElementById('admObraCapa');
+  if (capaInput && capaInput.files.length > 0) {
+    const file = capaInput.files[0];
+    if (file.size > 5 * 1024 * 1024) {
+      mostrarToast('Capa muito grande. Máximo 5MB.', 'alerta');
+      return;
+    }
+    try {
+      const path = 'covers/' + Date.now() + '_' + file.name;
+      const { error } = await AppState.supabase.storage.from('covers').upload(path, file, { upsert: true });
+      if (!error) {
+        const { data } = AppState.supabase.storage.from('covers').getPublicUrl(path);
+        dados.cover_url = data.publicUrl;
+      }
+    } catch (err) {
+      console.error('[SolitudeScan] Erro ao upload capa:', err);
+    }
+  }
+
+  try {
+    if (AppState.admin.editandoObraId) {
+      const { error } = await AppState.supabase
+        .from('works')
+        .update(dados)
+        .eq('id', AppState.admin.editandoObraId);
+      if (error) throw error;
+      mostrarToast('Obra atualizada com sucesso!', 'sucesso');
+    } else {
+      const { error } = await AppState.supabase.from('works').insert([dados]);
+      if (error) throw error;
+      mostrarToast('Obra criada com sucesso!', 'sucesso');
+    }
+
+    toggleModal('adminObraFormModal');
+    carregarObrasAdmin();
+    carregarObras(); // Atualizar catálogo público
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao salvar obra:', err);
+    mostrarToast('Falha ao salvar obra: ' + (err.message || 'Erro desconhecido'), 'erro');
+  }
+}
+
+function editarObraAdmin(obraId) {
+  abrirFormularioObra(obraId);
+}
+
+function confirmarExclusaoObra(obraId) {
+  abrirConfirmacao(
+    'Excluir Obra',
+    'Tem certeza que deseja excluir esta obra? Todos os capítulos e páginas associados também serão excluídos. Esta ação é irreversível.',
+    () => excluirObraAdmin(obraId)
+  );
+}
+
+async function excluirObraAdmin(obraId) {
+  if (!AppState.usuario.isAdmin) return;
+
+  try {
+    // Excluir páginas, capítulos e depois a obra (em cascata via RLS)
+    await AppState.supabase.from('pages').delete().in('chapter_id', 
+      (await AppState.supabase.from('chapters').select('id').eq('work_id', obraId)).data?.map(c => c.id) || []
+    );
+    await AppState.supabase.from('chapters').delete().eq('work_id', obraId);
+    const { error } = await AppState.supabase.from('works').delete().eq('id', obraId);
+    
+    if (error) throw error;
+    
+    mostrarToast('Obra excluída com sucesso.', 'sucesso');
+    carregarObrasAdmin();
+    carregarObras();
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao excluir obra:', err);
+    mostrarToast('Falha ao excluir obra.', 'erro');
+  }
+}
+
+/* =========================================================================
+   32. ADMIN — CRUD DE CAPÍTULOS
+   ========================================================================= */
+
+async function carregarCapitulosAdmin(obraId) {
+  if (!AppState.supabase || !AppState.usuario.isAdmin) return;
+
+  const container = document.getElementById('adminCapitulosLista');
+  if (!container) return;
+
+  container.innerHTML = '<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Carregando capítulos...</div>';
+
+  try {
+    const { data, error } = await AppState.supabase
+      .from('chapters')
+      .select('*')
+      .eq('work_id', obraId)
+      .order('number', { ascending: true });
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhum capítulo cadastrado.</p><button class="btn-primary" onclick="abrirFormularioCapitulo(\'' + obraId + '\')">Adicionar Capítulo</button></div>';
+      return;
+    }
+
+    container.innerHTML = data.map(cap => `
+      <div class="admin-item" data-id="${cap.id}">
+        <div class="admin-item-info">
+          <h4>${escaparHtml(cap.title || 'Capítulo ' + cap.number)}</h4>
+          <p>Número: ${cap.number} • ${dataRelativa(cap.created_at)}</p>
+          <span class="admin-item-meta">${cap.is_vip_only ? '<i class="fa-solid fa-crown"></i> VIP' : 'Público'}</span>
+        </div>
+        <div class="admin-item-actions">
+          <button class="btn-icon" onclick="gerenciarPaginasCapitulo('${cap.id}', '${obraId}')" aria-label="Gerenciar páginas" title="Páginas">
+            <i class="fa-solid fa-images"></i>
+          </button>
+          <button class="btn-icon" onclick="editarCapituloAdmin('${cap.id}', '${obraId}')" aria-label="Editar capítulo" title="Editar">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button class="btn-icon danger" onclick="confirmarExclusaoCapitulo('${cap.id}', '${obraId}')" aria-label="Excluir capítulo" title="Excluir">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao carregar capítulos admin:', err);
+    container.innerHTML = '<div class="error-state"><p>Falha ao carregar capítulos.</p></div>';
+  }
+}
+
+function abrirFormularioCapitulo(obraId, capituloId = null) {
+  if (!AppState.usuario.isAdmin) return;
+
+  AppState.admin.editandoCapituloId = capituloId;
+  AppState.admin.obraAtualAdmin = obraId;
+
+  const form = document.getElementById('adminCapituloForm');
+  if (form) form.reset();
+
+  const titulo = document.getElementById('adminCapituloFormTitulo');
+  if (titulo) titulo.textContent = capituloId ? 'Editar Capítulo' : 'Novo Capítulo';
+
+  if (capituloId) {
+    // Carregar dados do capítulo
+    AppState.supabase.from('chapters').select('*').eq('id', capituloId).single()
+      .then(({ data }) => {
+        if (data) {
+          document.getElementById('admCapTitulo').value = data.title || '';
+          document.getElementById('admCapNumero').value = data.number || '';
+          document.getElementById('admCapVip').checked = !!data.is_vip_only;
+        }
+      });
+  }
+
+  toggleModal('adminCapituloFormModal');
+}
+
+async function salvarCapituloAdmin(e) {
+  e.preventDefault();
+  if (!AppState.usuario.isAdmin) return;
+
+  const dados = {
+    work_id: AppState.admin.obraAtualAdmin,
+    title: document.getElementById('admCapTitulo').value.trim(),
+    number: parseFloat(document.getElementById('admCapNumero').value) || 1,
+    is_vip_only: document.getElementById('admCapVip').checked
+  };
+
+  if (!dados.title || dados.title.length < 2) {
+    mostrarToast('Título obrigatório.', 'alerta');
+    return;
+  }
+
+  try {
+    if (AppState.admin.editandoCapituloId) {
+      const { error } = await AppState.supabase
+        .from('chapters')
+        .update(dados)
+        .eq('id', AppState.admin.editandoCapituloId);
+      if (error) throw error;
+      mostrarToast('Capítulo atualizado!', 'sucesso');
+    } else {
+      const { error } = await AppState.supabase.from('chapters').insert([dados]);
+      if (error) throw error;
+      mostrarToast('Capítulo criado!', 'sucesso');
+    }
+
+    toggleModal('adminCapituloFormModal');
+    carregarCapitulosAdmin(AppState.admin.obraAtualAdmin);
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao salvar capítulo:', err);
+    mostrarToast('Falha ao salvar capítulo.', 'erro');
+  }
+}
+
+function editarCapituloAdmin(capituloId, obraId) {
+  abrirFormularioCapitulo(obraId, capituloId);
+}
+
+function confirmarExclusaoCapitulo(capituloId, obraId) {
+  abrirConfirmacao(
+    'Excluir Capítulo',
+    'Tem certeza? Todas as páginas deste capítulo serão excluídas.',
+    () => excluirCapituloAdmin(capituloId, obraId)
+  );
+}
+
+async function excluirCapituloAdmin(capituloId, obraId) {
+  if (!AppState.usuario.isAdmin) return;
+
+  try {
+    await AppState.supabase.from('pages').delete().eq('chapter_id', capituloId);
+    const { error } = await AppState.supabase.from('chapters').delete().eq('id', capituloId);
+    if (error) throw error;
+    mostrarToast('Capítulo excluído.', 'sucesso');
+    carregarCapitulosAdmin(obraId);
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao excluir capítulo:', err);
+    mostrarToast('Falha ao excluir capítulo.', 'erro');
+  }
+}
+
+/* =========================================================================
+   33. ADMIN — UPLOAD DE PÁGINAS (COM PDF INTEGRADO)
+   ========================================================================= */
+
+function gerenciarPaginasCapitulo(capituloId, obraId) {
+  AppState.admin.capituloAtualAdmin = capituloId;
+  AppState.admin.obraAtualAdmin = obraId;
+  toggleModal('adminPaginasModal');
+  carregarPaginasAdmin(capituloId);
+}
+
+async function carregarPaginasAdmin(capituloId) {
+  if (!AppState.supabase) return;
+
+  const container = document.getElementById('adminPaginasLista');
+  if (!container) return;
+
+  container.innerHTML = '<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Carregando páginas...</div>';
+
+  try {
+    const { data, error } = await AppState.supabase
+      .from('pages')
+      .select('*')
+      .eq('chapter_id', capituloId)
+      .order('page_number', { ascending: true });
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhuma página neste capítulo.</p><p class="empty-hint">Use o upload acima para adicionar imagens ou PDFs.</p></div>';
+      return;
+    }
+
+    container.innerHTML = data.map(pag => `
+      <div class="admin-page-item" data-id="${pag.id}">
+        <img src="${pag.image_url}" alt="Página ${pag.page_number}" loading="lazy" onerror="this.src='${PLACEHOLDERS.PAGINA_PLACEHOLDER}'">
+        <span class="page-number">#${pag.page_number}</span>
+        <button class="btn-icon danger" onclick="excluirPaginaAdmin('${pag.id}', '${capituloId}')" aria-label="Excluir página">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao carregar páginas:', err);
+    container.innerHTML = '<div class="error-state"><p>Falha ao carregar páginas.</p></div>';
+  }
 }
 
 async function processarUploadAdmin() {
@@ -2303,14 +3660,27 @@ async function processarUploadAdmin() {
     return;
   }
 
+  if (!AppState.admin.capituloAtualAdmin) {
+    mostrarToast('Selecione um capítulo primeiro.', 'alerta');
+    return;
+  }
+
   const arquivos = Array.from(fileInput.files);
   
-  // Validação de tamanho (50MB por arquivo)
-  const MAX_SIZE = 50 * 1024 * 1024;
-  const arquivosInvalidos = arquivos.filter(f => f.size > MAX_SIZE);
+  // Validação rigorosa de tamanho e tipo
+  const MAX_SIZE = CONFIG.MAX_UPLOAD_SIZE;
+  const arquivosInvalidosTamanho = arquivos.filter(f => f.size > MAX_SIZE);
   
-  if (arquivosInvalidos.length > 0) {
-    mostrarToast('Arquivos muito grandes (máx. 50MB): ' + arquivosInvalidos.map(f => f.name).join(', '), 'erro', 6000);
+  if (arquivosInvalidosTamanho.length > 0) {
+    mostrarToast('Arquivos muito grandes (máx. 50MB): ' + arquivosInvalidosTamanho.map(f => f.name).join(', '), 'erro', 6000);
+    return;
+  }
+
+  const tiposValidos = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+  const arquivosInvalidosTipo = arquivos.filter(f => !tiposValidos.includes(f.type) && !/\.(jpe?g|png|webp|gif|pdf)$/i.test(f.name));
+  
+  if (arquivosInvalidosTipo.length > 0) {
+    mostrarToast('Formatos inválidos: ' + arquivosInvalidosTipo.map(f => f.name).join(', '), 'erro', 6000);
     return;
   }
 
@@ -2319,6 +3689,7 @@ async function processarUploadAdmin() {
 
   let todas = imagens.slice();
 
+  // Processar PDFs
   for (const pdf of pdfs) {
     try {
       mostrarToast('Processando ' + pdf.name + '...', 'info', 2000);
@@ -2336,7 +3707,10 @@ async function processarUploadAdmin() {
     return;
   }
 
-  await uploadPaginasSupabase(todas);
+  await uploadPaginasSupabase(todas, AppState.admin.capituloAtualAdmin);
+  
+  // Limpar input
+  fileInput.value = '';
 }
 
 function ehArquivoPDF(file) {
@@ -2352,8 +3726,19 @@ async function processarPDFParaImagens(file, qualidade = 0.82, escala = 2) {
     throw new Error('PDF.js não disponível');
   }
 
+  // Validação adicional de tamanho para PDFs (mais restrito)
+  if (file.size > 100 * 1024 * 1024) { // 100MB para PDFs
+    throw new Error('PDF muito grande (máx. 100MB)');
+  }
+
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  
+  // Limitar número de páginas para evitar DoS
+  if (pdf.numPages > 200) {
+    throw new Error('PDF com muitas páginas (máx. 200)');
+  }
+
   const imagens = [];
 
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -2400,17 +3785,33 @@ async function carregarPDFjs() {
   });
 }
 
-async function uploadPaginasSupabase(arquivos) {
+async function uploadPaginasSupabase(arquivos, capituloId) {
   if (!AppState.supabase || !AppState.usuario.isAdmin) {
     mostrarToast('Acesso negado ou offline.', 'erro');
     return [];
   }
 
+  // Obter número de páginas existentes para continuar a numeração
+  let paginaInicial = 1;
+  try {
+    const { data } = await AppState.supabase
+      .from('pages')
+      .select('page_number')
+      .eq('chapter_id', capituloId)
+      .order('page_number', { ascending: false })
+      .limit(1);
+    
+    if (data && data.length > 0) {
+      paginaInicial = data[0].page_number + 1;
+    }
+  } catch (err) {}
+
   const urls = [];
+  let paginaAtual = paginaInicial;
   
   for (const file of arquivos) {
     try {
-      const path = 'capitulos/' + Date.now() + '_' + file.name;
+      const path = 'chapters/' + capituloId + '/' + String(paginaAtual).padStart(3, '0') + '_' + Date.now() + '_' + file.name;
       const { error } = await AppState.supabase.storage
         .from('chapters')
         .upload(path, file, { upsert: true });
@@ -2422,7 +3823,15 @@ async function uploadPaginasSupabase(arquivos) {
         .getPublicUrl(path);
 
       if (data && data.publicUrl) {
+        // Registrar no banco
+        await AppState.supabase.from('pages').insert({
+          chapter_id: capituloId,
+          image_url: data.publicUrl,
+          page_number: paginaAtual
+        });
+        
         urls.push(data.publicUrl);
+        paginaAtual++;
       }
     } catch (err) {
       console.error('[SolitudeScan] Erro no upload:', err);
@@ -2431,19 +3840,408 @@ async function uploadPaginasSupabase(arquivos) {
 
   if (urls.length > 0) {
     mostrarToast(urls.length + ' páginas enviadas com sucesso!', 'sucesso');
+    carregarPaginasAdmin(capituloId);
   }
 
   return urls;
 }
 
+async function excluirPaginaAdmin(paginaId, capituloId) {
+  if (!AppState.usuario.isAdmin) return;
+
+  abrirConfirmacao(
+    'Excluir Página',
+    'Tem certeza que deseja excluir esta página?',
+    async () => {
+      try {
+        const { error } = await AppState.supabase.from('pages').delete().eq('id', paginaId);
+        if (error) throw error;
+        mostrarToast('Página excluída.', 'sucesso');
+        carregarPaginasAdmin(capituloId);
+      } catch (err) {
+        console.error('[SolitudeScan] Erro ao excluir página:', err);
+        mostrarToast('Falha ao excluir página.', 'erro');
+      }
+    }
+  );
+}
+
 /* =========================================================================
-   31. PWA — SERVICE WORKER E INSTALAÇÃO
+   34. ADMIN — GERENCIAMENTO DE USUÁRIOS
+   ========================================================================= */
+
+async function carregarUsuariosAdmin() {
+  if (!AppState.supabase || !AppState.usuario.isAdmin) return;
+
+  const container = document.getElementById('adminUsuariosLista');
+  if (!container) return;
+
+  container.innerHTML = '<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Carregando usuários...</div>';
+
+  try {
+    const { data, error } = await AppState.supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+
+    AppState.modais.listaUsuarios = data || [];
+
+    if (AppState.modais.listaUsuarios.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhum usuário cadastrado.</p></div>';
+      return;
+    }
+
+    container.innerHTML = AppState.modais.listaUsuarios.map(user => `
+      <div class="admin-item" data-id="${user.id}">
+        <img src="${user.avatar_url || PLACEHOLDERS.AVATAR_SVG}" alt="${escaparHtml(user.full_name || 'Usuário')}" class="admin-user-avatar" onerror="this.src='${PLACEHOLDERS.AVATAR_SVG}'">
+        <div class="admin-item-info">
+          <h4>${escaparHtml(user.full_name || 'Sem nome')}</h4>
+          <p>${escaparHtml(user.email || '')}</p>
+          <span class="admin-item-meta">
+            ${user.is_admin ? '<span class="badge-admin">Admin</span>' : ''}
+            ${user.is_vip ? '<span class="badge-vip">VIP</span>' : ''}
+            ${!user.is_admin && !user.is_vip ? '<span class="badge-free">Gratuito</span>' : ''}
+          </span>
+        </div>
+        <div class="admin-item-actions">
+          <button class="btn-icon" onclick="toggleAdminUsuario('${user.id}', ${!user.is_admin})" aria-label="Toggle admin" title="${user.is_admin ? 'Remover admin' : 'Tornar admin'}">
+            <i class="fa-solid fa-shield${user.is_admin ? '' : '-halved'}"></i>
+          </button>
+          <button class="btn-icon" onclick="toggleVipUsuario('${user.id}', ${!user.is_vip})" aria-label="Toggle VIP" title="${user.is_vip ? 'Remover VIP' : 'Tornar VIP'}">
+            <i class="fa-solid fa-crown"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    AppState.admin.usuariosCarregados = true;
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao carregar usuários:', err);
+    container.innerHTML = '<div class="error-state"><p>Falha ao carregar usuários.</p></div>';
+  }
+}
+
+async function toggleAdminUsuario(userId, novoEstado) {
+  if (!AppState.usuario.isAdmin) return;
+
+  if (userId === AppState.usuario.id && !novoEstado) {
+    mostrarToast('Você não pode remover seus próprios privilégios de admin.', 'alerta');
+    return;
+  }
+
+  try {
+    const { error } = await AppState.supabase
+      .from('profiles')
+      .update({ is_admin: novoEstado })
+      .eq('id', userId);
+
+    if (error) throw error;
+    mostrarToast(novoEstado ? 'Usuário tornado admin.' : 'Privilégios de admin removidos.', 'sucesso');
+    carregarUsuariosAdmin();
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao toggle admin:', err);
+    mostrarToast('Falha ao atualizar usuário.', 'erro');
+  }
+}
+
+async function toggleVipUsuario(userId, novoEstado) {
+  if (!AppState.usuario.isAdmin) return;
+
+  try {
+    const updates = { is_vip: novoEstado };
+    if (novoEstado) {
+      updates.vip_plan = 'VIP Admin Grant';
+      updates.vip_expires_at = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+    }
+
+    const { error } = await AppState.supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', userId);
+
+    if (error) throw error;
+    mostrarToast(novoEstado ? 'Usuário tornado VIP (1 ano).' : 'VIP removido.', 'sucesso');
+    carregarUsuariosAdmin();
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao toggle VIP:', err);
+    mostrarToast('Falha ao atualizar usuário.', 'erro');
+  }
+}
+
+/* =========================================================================
+   35. ADMIN — APROVAÇÃO DE PAGAMENTOS PIX
+   ========================================================================= */
+
+async function carregarPagamentosAdmin() {
+  if (!AppState.supabase || !AppState.usuario.isAdmin) return;
+
+  const container = document.getElementById('adminPagamentosLista');
+  if (!container) return;
+
+  container.innerHTML = '<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Carregando pagamentos...</div>';
+
+  try {
+    const { data, error } = await AppState.supabase
+      .from('payment_requests')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+
+    AppState.modais.listaPagamentos = data || [];
+
+    if (AppState.modais.listaPagamentos.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhum pagamento registrado.</p></div>';
+      return;
+    }
+
+    container.innerHTML = AppState.modais.listaPagamentos.map(pag => {
+      const statusClass = 'status-' + (pag.status || 'pendente');
+      const statusLabel = {
+        'pendente': 'Pendente',
+        'aguardando_confirmacao': 'Aguardando Confirmação',
+        'aprovado': 'Aprovado',
+        'rejeitado': 'Rejeitado',
+        'expirado': 'Expirado'
+      }[pag.status] || pag.status;
+
+      return `
+        <div class="admin-item" data-id="${pag.id}">
+          <div class="admin-item-info">
+            <h4>${escaparHtml(pag.nome || 'Sem nome')} — ${escaparHtml(pag.plano)}</h4>
+            <p>${escaparHtml(pag.email)} • ${formatarMoeda(pag.valor || 0)}</p>
+            <span class="admin-item-meta">
+              <span class="status-badge ${statusClass}">${statusLabel}</span>
+              • ${dataRelativa(pag.created_at)}
+            </span>
+          </div>
+          <div class="admin-item-actions">
+            ${(pag.status === 'pendente' || pag.status === 'aguardando_confirmacao') ? `
+              <button class="btn-icon success" onclick="aprovarPagamento('${pag.id}')" aria-label="Aprovar" title="Aprovar">
+                <i class="fa-solid fa-check"></i>
+              </button>
+              <button class="btn-icon danger" onclick="rejeitarPagamento('${pag.id}')" aria-label="Rejeitar" title="Rejeitar">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    AppState.admin.pagamentosCarregados = true;
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao carregar pagamentos:', err);
+    container.innerHTML = '<div class="error-state"><p>Falha ao carregar pagamentos.</p></div>';
+  }
+}
+
+async function aprovarPagamento(pagamentoId) {
+  if (!AppState.usuario.isAdmin) return;
+
+  abrirConfirmacao(
+    'Aprovar Pagamento',
+    'Confirme que o Pix foi recebido no banco. O VIP será ativado automaticamente para o e-mail informado.',
+    async () => {
+      try {
+        const pag = AppState.modais.listaPagamentos.find(p => p.id === pagamentoId);
+        if (!pag) {
+          mostrarToast('Pagamento não encontrado.', 'erro');
+          return;
+        }
+
+        // Atualizar status
+        const { error } = await AppState.supabase
+          .from('payment_requests')
+          .update({ 
+            status: 'aprovado',
+            approved_at: new Date().toISOString(),
+            approved_by: AppState.usuario.id
+          })
+          .eq('id', pagamentoId);
+
+        if (error) throw error;
+
+        // Ativar VIP no perfil do usuário
+        const dias = CONFIG.PLANOS_DURACAO[pag.plano] || 30;
+        const expiraEm = new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString();
+
+        await AppState.supabase
+          .from('profiles')
+          .update({
+            is_vip: true,
+            vip_plan: pag.plano,
+            vip_expires_at: expiraEm
+          })
+          .eq('email', pag.email);
+
+        // Enviar notificação ao usuário (se existir)
+        if (pag.user_id) {
+          await AppState.supabase.from('notifications').insert({
+            user_id: pag.user_id,
+            type: 'vip',
+            message: 'Seu pagamento foi aprovado! VIP ' + pag.plano + ' ativado até ' + new Date(expiraEm).toLocaleDateString('pt-BR') + '.',
+            read: false
+          });
+        }
+
+        mostrarToast('Pagamento aprovado! VIP ativado para ' + pag.email, 'sucesso');
+        carregarPagamentosAdmin();
+      } catch (err) {
+        console.error('[SolitudeScan] Erro ao aprovar pagamento:', err);
+        mostrarToast('Falha ao aprovar pagamento.', 'erro');
+      }
+    }
+  );
+}
+
+async function rejeitarPagamento(pagamentoId) {
+  if (!AppState.usuario.isAdmin) return;
+
+  abrirConfirmacao(
+    'Rejeitar Pagamento',
+    'Tem certeza que deseja rejeitar este pagamento? O usuário será notificado.',
+    async () => {
+      try {
+        const pag = AppState.modais.listaPagamentos.find(p => p.id === pagamentoId);
+        
+        await AppState.supabase
+          .from('payment_requests')
+          .update({ 
+            status: 'rejeitado',
+            rejected_at: new Date().toISOString(),
+            rejected_by: AppState.usuario.id
+          })
+          .eq('id', pagamentoId);
+
+        if (pag && pag.user_id) {
+          await AppState.supabase.from('notifications').insert({
+            user_id: pag.user_id,
+            type: 'sistema',
+            message: 'Seu pagamento foi rejeitado. Entre em contato com o suporte para mais informações.',
+            read: false
+          });
+        }
+
+        mostrarToast('Pagamento rejeitado.', 'info');
+        carregarPagamentosAdmin();
+      } catch (err) {
+        console.error('[SolitudeScan] Erro ao rejeitar:', err);
+        mostrarToast('Falha ao rejeitar pagamento.', 'erro');
+      }
+    }
+  );
+}
+
+/* =========================================================================
+   36. ADMIN — MODERAÇÃO DE DENÚNCIAS
+   ========================================================================= */
+
+async function carregarDenunciasAdmin() {
+  if (!AppState.supabase || !AppState.usuario.isAdmin) return;
+
+  const container = document.getElementById('adminDenunciasLista');
+  if (!container) return;
+
+  container.innerHTML = '<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Carregando denúncias...</div>';
+
+  try {
+    const { data, error } = await AppState.supabase
+      .from('reports')
+      .select(`
+        *,
+        reporter:reporter_id (full_name, email)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhuma denúncia pendente.</p></div>';
+      return;
+    }
+
+    container.innerHTML = data.map(rep => {
+      const reporter = rep.reporter || {};
+      return `
+        <div class="admin-item" data-id="${rep.id}">
+          <div class="admin-item-info">
+            <h4>Denúncia: ${escaparHtml(rep.target_type || 'desconhecido')}</h4>
+            <p>Reportado por: ${escaparHtml(reporter.full_name || reporter.email || 'Anônimo')}</p>
+            <span class="admin-item-meta">
+              <span class="status-badge status-${rep.status}">${rep.status}</span>
+              • ${dataRelativa(rep.created_at)}
+            </span>
+          </div>
+          <div class="admin-item-actions">
+            <button class="btn-icon" onclick="verDenuncia('${rep.id}')" aria-label="Ver denúncia" title="Ver">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+            <button class="btn-icon success" onclick="resolverDenuncia('${rep.id}', 'resolvido')" aria-label="Resolver" title="Resolver">
+              <i class="fa-solid fa-check"></i>
+            </button>
+            <button class="btn-icon danger" onclick="resolverDenuncia('${rep.id}', 'descartado')" aria-label="Descartar" title="Descartar">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao carregar denúncias:', err);
+    container.innerHTML = '<div class="error-state"><p>Falha ao carregar denúncias.</p></div>';
+  }
+}
+
+async function verDenuncia(denunciaId) {
+  // Implementação: abrir modal com detalhes da denúncia e conteúdo reportado
+  mostrarToast('Visualização de denúncia em desenvolvimento.', 'info');
+}
+
+async function resolverDenuncia(denunciaId, status) {
+  if (!AppState.usuario.isAdmin) return;
+
+  try {
+    const { error } = await AppState.supabase
+      .from('reports')
+      .update({ 
+        status: status,
+        resolved_at: new Date().toISOString(),
+        resolved_by: AppState.usuario.id
+      })
+      .eq('id', denunciaId);
+
+    if (error) throw error;
+    mostrarToast('Denúncia ' + (status === 'resolvido' ? 'resolvida' : 'descartada') + '.', 'sucesso');
+    carregarDenunciasAdmin();
+  } catch (err) {
+    console.error('[SolitudeScan] Erro ao resolver denúncia:', err);
+    mostrarToast('Falha ao atualizar denúncia.', 'erro');
+  }
+}
+
+
+/* =========================================================================
+   37. PWA — SERVICE WORKER E INSTALAÇÃO
    ========================================================================= */
 
 function registrarServiceWorker() {
   if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js')
+        .then((registration) => {
+          console.log('[SolitudeScan] SW registrado com sucesso:', registration.scope);
+          
+          // Verificar atualizações periodicamente
+          setInterval(() => {
+            registration.update();
+          }, 60 * 60 * 1000); // A cada 1 hora
+        })
         .catch(e => console.warn('[SolitudeScan] SW não registrado:', e));
     });
   }
@@ -2455,6 +4253,13 @@ function inicializarPWAInstall() {
     AppState.pwa.deferredInstallPrompt = e;
     const btn = document.getElementById('btnInstalarApp');
     if (btn) btn.style.display = 'block';
+  });
+
+  window.addEventListener('appinstalled', () => {
+    AppState.pwa.deferredInstallPrompt = null;
+    const btn = document.getElementById('btnInstalarApp');
+    if (btn) btn.style.display = 'none';
+    mostrarToast('App instalado com sucesso!', 'sucesso');
   });
 }
 
@@ -2476,25 +4281,30 @@ async function instalarApp() {
 }
 
 /* =========================================================================
-   32. ACESSIBILIDADE
+   38. ACESSIBILIDADE (COMPLETA)
    ========================================================================= */
 
 function aplicarAcessibilidade() {
-  if (!document.getElementById('skipLink')) {
-    const skip = document.createElement('a');
-    skip.id = 'skipLink';
-    skip.href = '#mainContent';
-    skip.textContent = 'Pular para o conteúdo principal';
-    skip.className = 'skip-link';
-    document.body.prepend(skip);
+  // Skip link já está no HTML, mas garantimos que funciona
+  const skipLink = document.getElementById('skipLink');
+  if (skipLink) {
+    skipLink.addEventListener('focus', () => {
+      skipLink.style.left = '0';
+      skipLink.style.top = '0';
+    });
+    skipLink.addEventListener('blur', () => {
+      skipLink.style.left = '-9999px';
+    });
   }
 
+  // Garantir que toast container tem ARIA
   const toastContainer = document.getElementById('toastContainer');
   if (toastContainer && !toastContainer.getAttribute('aria-live')) {
     toastContainer.setAttribute('aria-live', 'polite');
     toastContainer.setAttribute('role', 'status');
   }
 
+  // Adicionar aria-label em botões de ícone
   document.querySelectorAll('button').forEach(btn => {
     const texto = (btn.textContent || '').trim();
     const aria = btn.getAttribute('aria-label');
@@ -2522,12 +4332,23 @@ function aplicarAcessibilidade() {
         else if (classes.includes('fa-right-from-bracket')) rotulo = 'Sair';
         else if (classes.includes('fa-download')) rotulo = 'Download';
         else if (classes.includes('fa-magnifying-glass')) rotulo = 'Buscar';
+        else if (classes.includes('fa-pen')) rotulo = 'Editar';
+        else if (classes.includes('fa-trash')) rotulo = 'Excluir';
+        else if (classes.includes('fa-check')) rotulo = 'Confirmar';
+        else if (classes.includes('fa-images')) rotulo = 'Páginas';
+        else if (classes.includes('fa-shield')) rotulo = 'Admin';
+        else if (classes.includes('fa-crown')) rotulo = 'VIP';
+        else if (classes.includes('fa-copy')) rotulo = 'Copiar';
+        else if (classes.includes('fa-flag')) rotulo = 'Denunciar';
+        else if (classes.includes('fa-reply')) rotulo = 'Responder';
+        else if (classes.includes('fa-spinner')) rotulo = 'Carregando';
         
         btn.setAttribute('aria-label', rotulo);
       }
     }
   });
 
+  // Navegação por teclado nos cards
   if (!window.__enterCardAtivo) {
     window.__enterCardAtivo = true;
     document.addEventListener('keydown', e => {
@@ -2540,12 +4361,56 @@ function aplicarAcessibilidade() {
     });
   }
 
+  // Respeitar prefers-reduced-motion
   if (!document.getElementById('estiloMovimentoReduzido')) {
     const style = document.createElement('style');
     style.id = 'estiloMovimentoReduzido';
-    style.textContent = '@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }';
+    style.textContent = `
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+    `;
     document.head.appendChild(style);
   }
+
+  // Focus trap em modais
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      if (!modal.classList.contains('active')) return;
+
+      const focusableElements = modal.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      
+      if (focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey && document.activeElement === firstElement) {
+        e.preventDefault();
+        lastElement.focus();
+      } else if (!e.shiftKey && document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement.focus();
+      }
+    });
+  });
+
+  // Fechar modal com Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && AppState.ui.modalAtual) {
+      // Não fechar o leitor com Escape (já tem handler próprio)
+      if (AppState.ui.modalAtual === 'readerModal') return;
+      toggleModal(AppState.ui.modalAtual);
+    }
+  });
 }
 
 function marcarCardsNavegaveis() {
@@ -2565,14 +4430,16 @@ function marcarCardsNavegaveis() {
 }
 
 /* =========================================================================
-   33. SEO DINÂMICO — META TAGS E DEEP LINKS
+   39. SEO DINÂMICO — META TAGS E DEEP LINKS
    ========================================================================= */
 
 function atualizarMetaTagsDinamicas(obra) {
   if (!obra) return;
 
+  // Atualizar title
   document.title = obra.titulo + ' | SolitudeScan';
   
+  // Função auxiliar para criar/atualizar meta tags
   const setMeta = (name, content, property = false) => {
     const selector = property ? `meta[property="${name}"]` : `meta[name="${name}"]`;
     let meta = document.querySelector(selector);
@@ -2585,14 +4452,45 @@ function atualizarMetaTagsDinamicas(obra) {
     meta.setAttribute('content', content);
   };
 
-  setMeta('description', (obra.sinopse || '').substring(0, 160), false);
+  // Descrição
+  const descricao = (obra.sinopse || '').substring(0, 160);
+  setMeta('description', descricao, false);
+  
+  // Open Graph
   setMeta('og:title', obra.titulo, true);
-  setMeta('og:description', (obra.sinopse || '').substring(0, 160), true);
+  setMeta('og:description', descricao, true);
   setMeta('og:image', obra.capa || '', true);
   setMeta('og:url', window.location.origin + '/?obra=' + encodeURIComponent(obra.id), true);
+  setMeta('og:type', 'book', true);
+  
+  // Twitter Cards
   setMeta('twitter:title', obra.titulo, false);
-  setMeta('twitter:description', (obra.sinopse || '').substring(0, 160), false);
+  setMeta('twitter:description', descricao, false);
   setMeta('twitter:image', obra.capa || '', false);
+  setMeta('twitter:card', 'summary_large_image', false);
+
+  // Canonical
+  let canonical = document.querySelector('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement('link');
+    canonical.setAttribute('rel', 'canonical');
+    document.head.appendChild(canonical);
+  }
+  canonical.setAttribute('href', window.location.origin + '/?obra=' + encodeURIComponent(obra.id));
+}
+
+function restaurarMetaTagsPadrao() {
+  document.title = 'SolitudeScan | Leia Manhwas, Mangás e Manhuás Online';
+  
+  const setMeta = (name, content, property = false) => {
+    const selector = property ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+    const meta = document.querySelector(selector);
+    if (meta) meta.setAttribute('content', content);
+  };
+
+  setMeta('description', 'Leia manhwas, mangás e manhuás online com experiência de leitura profissional, rápida e segura. Atualizações diárias e catálogo exclusivo.', false);
+  setMeta('og:title', 'SolitudeScan | Leia Manhwas, Mangás e Manhuás Online', true);
+  setMeta('og:description', 'Experiência de leitura profissional, rápida e segura. Atualizações diárias e catálogo exclusivo.', true);
 }
 
 function processarLinksProfundos() {
@@ -2613,7 +4511,7 @@ function ativarPopstate() {
 }
 
 /* =========================================================================
-   34. TESTES AUTOMATIZADOS
+   40. TESTES AUTOMATIZADOS (SUITE COMPLETA)
    ========================================================================= */
 
 async function rodarTestesSolitude() {
@@ -2623,30 +4521,39 @@ async function rodarTestesSolitude() {
     resultados.push({ nome: nome, ok: !!ok, detalhe: detalhe || '' });
   }
 
+  // Teste 1: Elementos DOM essenciais
   const elementos = [
     'mangaContainer', 'toastContainer', 'heroBannerSection', 'tendenciasContainer',
     'rankingContainer', 'continueLendoContainer', 'readerCascataContainer',
     'detalhesModal', 'readerModal', 'loginModal', 'registerModal', 'searchInput',
     'listaCapitulosContainer', 'btnFavoritar', 'pixModal', 'adminModal',
-    'admPaginasArquivo', 'cookieBanner', 'btnInstalarApp'
+    'admPaginasArquivo', 'cookieBanner', 'btnInstalarApp', 'skipLink',
+    'generoFiltro', 'statusFiltro', 'ordemFiltro', 'themeToggleBtn',
+    'loggedOutView', 'loggedInView', 'userNameDisplay', 'userAvatarImg',
+    'userPlanBadge', 'profileAvatarLarge', 'profileNameLarge'
   ];
   
   elementos.forEach(id => {
     teste('Elemento #' + id, !!document.getElementById(id));
   });
 
+  // Teste 2: Funções essenciais
   const funcoes = [
     'carregarObras', 'abrirDetalhesObra', 'abrirLeitor', 'fecharLeitor',
     'alternarFavorito', 'executarLoginCustom', 'executarCadastro', 'abrirPainelAdmin',
     'exportarDadosUsuario', 'compartilharObraAtual', 'avaliarObra', 'adicionarComentario',
     'carregarListasDoUsuario', 'salvarLista', 'escaparHtml', 'ehUuid', 'formatarNumero',
-    'processarUploadAdmin', 'processarPDFParaImagens', 'abrirModalPix', 'gerarCobrancaPix'
+    'processarUploadAdmin', 'processarPDFParaImagens', 'abrirModalPix', 'gerarCobrancaPix',
+    'alternarTema', 'aceitarCookies', 'rodarTestesSolitude', 'limparFiltros',
+    'carregarObrasAdmin', 'carregarUsuariosAdmin', 'carregarPagamentosAdmin',
+    'aprovarPagamento', 'salvarObraAdmin', 'salvarCapituloAdmin'
   ];
   
   funcoes.forEach(fn => {
     teste('Função ' + fn + '()', typeof window[fn] === 'function');
   });
 
+  // Teste 3: localStorage
   try {
     localStorage.setItem('solitude_teste', '1');
     const lido = localStorage.getItem('solitude_teste');
@@ -2656,12 +4563,15 @@ async function rodarTestesSolitude() {
     teste('localStorage lê/grava', false, e.message);
   }
 
+  // Teste 4: APIs do navegador
   teste('Service Worker suportado', 'serviceWorker' in navigator);
   teste('Fetch API suportado', typeof fetch === 'function');
   teste('Clipboard API suportado', !!(navigator.clipboard));
   teste('IntersectionObserver suportado', 'IntersectionObserver' in window);
+  teste('Web Share API suportado', !!(navigator.share));
   teste('PDF.js carregável', typeof carregarPDFjs === 'function');
 
+  // Teste 5: Conexão Supabase
   if (AppState.supabase) {
     try {
       const { error } = await AppState.supabase.from('works').select('id', { count: 'exact', head: true });
@@ -2683,10 +4593,30 @@ async function rodarTestesSolitude() {
     } catch (e) {
       teste('Bucket covers acessível', false, e.message);
     }
+
+    try {
+      const { data } = await AppState.supabase.storage.from('avatars').list('', { limit: 1 });
+      teste('Bucket avatars acessível', !!data);
+    } catch (e) {
+      teste('Bucket avatars acessível', false, e.message);
+    }
   } else {
     teste('Conexão Supabase', false, 'Cliente não inicializado');
+    teste('Tabela profiles legível', false, 'Cliente não inicializado');
+    teste('Bucket covers acessível', false, 'Cliente não inicializado');
+    teste('Bucket avatars acessível', false, 'Cliente não inicializado');
   }
 
+  // Teste 6: Segurança
+  teste('CSP presente', !!document.querySelector('meta[http-equiv="Content-Security-Policy"]'));
+  teste('EMAIL_ADMIN não hardcoded', !String(executarLoginCustom).includes('apolianadealmeidarocha97'));
+  teste('isAdmin vem do Supabase', String(carregarPerfilRemoto).includes('data.is_admin'));
+
+  // Teste 7: Acessibilidade
+  teste('Skip link presente', !!document.getElementById('skipLink'));
+  teste('Prefers-reduced-motion injetado', !!document.getElementById('estiloMovimentoReduzido'));
+
+  // Resultado final
   const falhas = resultados.filter(r => !r.ok);
   const total = resultados.length;
 
@@ -2729,49 +4659,8 @@ function garantirBotaoTeste() {
 }
 
 /* =========================================================================
-   35. FUNÇÕES AUXILIARES FINAIS
+   41. FUNÇÕES AUXILIARES FINAIS
    ========================================================================= */
-
-function garantirZonaPerigoPerfil() {
-  const container = document.querySelector('.profile-danger-zone');
-  if (container || !AppState.usuario.logado) return;
-
-  const profileSection = document.querySelector('.profile-section');
-  if (!profileSection) return;
-
-  const zona = document.createElement('div');
-  zona.className = 'profile-danger-zone';
-  zona.innerHTML = `
-    <h3>Zona de Perigo</h3>
-    <button class="btn-danger" onclick="solicitarExclusaoConta()">
-      <i class="fa-solid fa-trash"></i> Excluir Minha Conta
-    </button>
-  `;
-  profileSection.appendChild(zona);
-}
-
-function solicitarExclusaoConta() {
-  abrirConfirmacao(
-    'Excluir Conta',
-    'Esta ação é irreversível. Todos os seus dados serão perdidos. Deseja continuar?',
-    async () => {
-      if (!AppState.supabase || !AppState.usuario.logado) return;
-      
-      try {
-        await AppState.supabase.from('account_deletion_requests').insert({
-          user_id: AppState.usuario.id,
-          requested_at: new Date().toISOString()
-        });
-        
-        mostrarToast('Solicitação enviada. Sua conta será excluída em até 30 dias.', 'info', 8000);
-        fazerLogout();
-      } catch (err) {
-        console.error('[SolitudeScan] Erro ao solicitar exclusão:', err);
-        mostrarToast('Falha ao processar solicitação.', 'erro');
-      }
-    }
-  );
-}
 
 function limparPlaceholdersMortos() {
   try {
@@ -2785,40 +4674,43 @@ function limparPlaceholdersMortos() {
 }
 
 function fecharDropdowns(e) {
-  if (!e.target.closest('.dropdown')) {
+  if (!e.target.closest('.dropdown') && !e.target.closest('#notifBadge')) {
     document.querySelectorAll('.dropdown.active').forEach(d => d.classList.remove('active'));
+    AppState.notificacoes.dropdownAberto = false;
   }
 }
 
 /* =========================================================================
-   36. INICIALIZAÇÃO DA PÁGINA (DOMContentLoaded)
+   42. INICIALIZAÇÃO DA PÁGINA (DOMContentLoaded) — BOOTSTRAP COMPLETO
    ========================================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Segurança
+  console.log('[SolitudeScan] Inicializando aplicação v4.0...');
+
+  // ===== SEGURANÇA =====
   ativarProtecaoClickjacking();
   ativarProtecoesLeitor();
   ativarSincronizacaoSessao();
 
-  // Tema
+  // ===== TEMA =====
   aplicarTemaAutomatico();
   inicializarBotaoTema();
 
-  // Cookie banner LGPD
+  // ===== COOKIE BANNER LGPD =====
   mostrarBannerCookies();
 
-  // Restaurar dados locais do usuário
+  // ===== RESTAURAR DADOS LOCAIS DO USUÁRIO =====
   AppState.usuario.foto = localStorage.getItem('solitude_foto') || AppState.usuario.foto;
   AppState.usuario.nome = localStorage.getItem('solitude_nome') || AppState.usuario.nome;
   AppState.usuario.telefone = localStorage.getItem('solitude_tel') || AppState.usuario.telefone;
 
-  // Aplicar overrides locais
+  // ===== APLICAR OVERRIDES LOCAIS =====
   aplicarOverridesLocais();
 
-  // Verificar VIP ativo
+  // ===== VERIFICAR VIP ATIVO =====
   verificarVipAtivo();
 
-  // Carregar dados
+  // ===== CARREGAR DADOS =====
   carregarListasDoUsuario();
   carregarFavoritosUsuario();
   carregarHistoricoUsuario();
@@ -2828,98 +4720,73 @@ document.addEventListener("DOMContentLoaded", () => {
   atualizarPerfilTela();
   atualizarVisibilidadeAdmin();
 
-  // Leitor
+  // ===== LEITOR =====
   iniciarGestosLeitor();
   iniciarAtalhosTecladoLeitor();
   iniciarGestosAvancadosLeitor();
+  injetarEstiloAutoImersivo();
 
-  // Notificações
+  // ===== NOTIFICAÇÕES =====
   carregarNotificacoes();
 
-  // PWA
+  // ===== PWA =====
   registrarServiceWorker();
   inicializarPWAInstall();
 
-  // SEO — links profundos
+  // ===== SEO — LINKS PROFUNDOS =====
   processarLinksProfundos();
   ativarPopstate();
 
-  // Acessibilidade
+  // ===== ACESSIBILIDADE =====
   aplicarAcessibilidade();
   marcarCardsNavegaveis();
 
-  // Hero — swipe + auto-rotate
+  // ===== HERO — SWIPE + AUTO-ROTATE =====
   ativarSwipeHero();
 
-  // Dropdowns — fechar ao clicar fora
+  // ===== DROPDOWNS — FECHAR AO CLICAR FORA =====
   document.addEventListener('click', fecharDropdowns);
 
-  // Spoiler checkbox
+  // ===== SPOILER CHECKBOX =====
   garantirCheckboxSpoiler();
 
-  // Testes
+  // ===== TESTES =====
   processarParametroTestes();
   garantirBotaoTeste();
 
-  // Limpar placeholders mortos periodicamente
+  // ===== LIMPAR PLACEHOLDERS MORTOS PERIODICAMENTE =====
   setInterval(limparPlaceholdersMortos, 5000);
 
-  // Verificar sessão Supabase
+  // ===== VERIFICAR SESSÃO SUPABASE =====
   if (AppState.supabase) verificarSessaoSupabase();
 
-  // Botão Admin
+  // ===== BOTÃO ADMIN =====
   const btnAdmin = document.getElementById('btnAdminNav');
   if (btnAdmin) {
     btnAdmin.addEventListener('click', abrirPainelAdmin);
   }
 
-  // Verificação de VIP a cada 1 hora
+  // ===== BOTÃO NOTIFICAÇÕES =====
+  const notifBadge = document.getElementById('notifBadge');
+  if (notifBadge) {
+    notifBadge.addEventListener('click', toggleDropdownNotificacoes);
+  }
+
+  // ===== VERIFICAÇÃO DE VIP A CADA 1 HORA =====
   setInterval(verificarVipAtivo, 3600000);
 
-  // Esconder botão de teste dos visitantes (só admin vê)
+  // ===== ESCONDER BOTÃO DE TESTE DOS VISITANTES (SÓ ADMIN VÊ) =====
   setTimeout(function () {
     if (AppState.usuario.isAdmin) return;
     const btnTeste = document.getElementById('btnTesteSolitude');
     if (btnTeste) btnTeste.remove();
   }, 1500);
+
+  // ===== LOG FINAL =====
+  console.log('[SolitudeScan] Aplicação inicializada com sucesso.');
+  console.log('[SolitudeScan] Stack: Vanilla JS + Supabase');
+  console.log('[SolitudeScan] Segurança: CSP + RLS + Validação de Inputs');
+  console.log('[SolitudeScan] Performance: Lazy Loading + Service Worker + Debounce');
+  console.log('[SolitudeScan] Acessibilidade: ARIA + Skip Link + Reduced Motion + Focus Trap');
 });
-
-/* =========================================================================
-   FIM DO ARQUIVO — SOLITUDESCAN v4.0
-   Arquitetura modular, segurança reforçada, sem patches sobrepostos.
-   Todas as funcionalidades preservadas e aprimoradas.
-   ========================================================================= */
-function previewFotoPerfil(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (!file.type.startsWith('image/')) {
-    mostrarToast('Escolha uma imagem válida da sua galeria.', 'alerta');
-    return;
-  }
-  const prev = document.getElementById('editFotoPreview');
-  if (prev) prev.src = URL.createObjectURL(file);
-}
-
-function redimensionarImagem(file, max = 256) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const scale = Math.min(1, max / Math.max(img.width, img.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
-}
-
-// Garantir que a função existe para o HTML
-function garantirZonaPerigoPerfil() {
-  // Implementação placeholder - será completada na Parte 3
-}
 
