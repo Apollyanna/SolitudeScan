@@ -1,838 +1,589 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
 <head>
-  <!-- Verificação Google Search Console -->
-  <meta name="google-site-verification" content="xRmR2yp88xiSvNMZ33EGDkLAIYTTKUKJNK8rRsEvLJ0" />
-
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-  <meta http-equiv="X-Content-Type-Options" content="nosniff">
-  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-  <meta name="referrer" content="strict-origin-when-cross-origin">
-
-  <!-- Content Security Policy -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com data: blob:; img-src * data: blob:; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; script-src 'self' 'unsafe-inline' https://*.supabase.co https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self';">
-
-  <!-- SEO Principal -->
-  <title>SolitudeScan — Ler Manhwas, Mangás e Manhuás Online Grátis</title>
-  <meta name="description" content="Leia manhwas, mangás e manhuás online em alta definição no SolitudeScan. Leitura fluida em cascata, capítulos VIP, sem anúncios, sem travamentos.">
-  <meta name="keywords" content="solitudescan, scan, scanlation, manhwa, mangá, manhua, webtoon, ler online, gratis, portugues, br, capitulo, vip, shoujo, shounen, seinen, josei, isekai, romance, acao, fantasia">
-  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  
+  <!-- SEGURANÇA: Content Security Policy Rigoroso -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data: blob:; img-src * data: blob:; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; script-src 'self' 'unsafe-inline' https://*.supabase.co https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';">
+  
+  <!-- SEO BÁSICO -->
+  <title>SolitudeScan | Leia Manhwas, Mangás e Manhuás Online</title>
+  <meta name="description" content="Leia manhwas, mangás e manhuás online com experiência de leitura profissional, rápida e segura. Atualizações diárias e catálogo exclusivo.">
+  <meta name="keywords" content="mangá, manhwa, manhua, leitura online, scan, solitude scan, quadrinhos coreanos, quadrinhos japoneses">
   <meta name="author" content="SolitudeScan">
-  <meta name="language" content="Portuguese">
-  <meta name="rating" content="general">
-  <meta name="distribution" content="global">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <link rel="canonical" href="https://solitudescan.com/">
 
-  <link rel="canonical" href="https://solitudescan.netlify.app/">
-
-  <!-- PWA -->
-  <meta name="theme-color" content="#0c070f" media="(prefers-color-scheme: dark)">
-  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="SolitudeScan">
-  <meta name="format-detection" content="telephone=no">
-
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" type="image/png" href="icon.png">
-  <link rel="apple-touch-icon" href="icon.png">
-
-  <!-- Open Graph (Facebook, Discord, WhatsApp) -->
+  <!-- OPEN GRAPH / FACEBOOK -->
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="SolitudeScan">
+  <meta property="og:url" content="https://solitudescan.com/">
+  <meta property="og:title" content="SolitudeScan | Leia Manhwas, Mangás e Manhuás Online">
+  <meta property="og:description" content="Experiência de leitura profissional, rápida e segura. Atualizações diárias e catálogo exclusivo.">
+  <meta property="og:image" content="https://solitudescan.com/og-image.jpg">
   <meta property="og:locale" content="pt_BR">
-  <meta property="og:title" content="SolitudeScan — Ler Manhwas, Mangás e Manhuás Online Grátis">
-  <meta property="og:description" content="Plataforma premium de leitura de manhwas e quadrinhos online. Capítulos novos toda semana, leitura fluida em cascata, sem anúncios.">
-  <meta property="og:url" content="https://solitudescan.netlify.app/">
-  <meta property="og:image" content="https://solitudescan.netlify.app/icon.png">
-  <meta property="og:image:width" content="1122">
-  <meta property="og:image:height" content="1402">
-  <meta property="og:image:alt" content="SolitudeScan - Ler manhwas e mangás online">
 
-  <!-- Twitter Cards (X) -->
+  <!-- TWITTER CARDS -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="SolitudeScan — Ler Manhwas, Mangás e Manhuás Online Grátis">
-  <meta name="twitter:description" content="Plataforma premium de leitura de manhwas e quadrinhos online. Leitura fluida em cascata, capítulos VIP, sem anúncios.">
-  <meta name="twitter:image" content="https://solitudescan.netlify.app/icon.png">
+  <meta name="twitter:url" content="https://solitudescan.com/">
+  <meta name="twitter:title" content="SolitudeScan | Leia Manhwas, Mangás e Manhuás Online">
+  <meta name="twitter:description" content="Experiência de leitura profissional, rápida e segura.">
+  <meta name="twitter:image" content="https://solitudescan.com/og-image.jpg">
 
-  <!-- JSON-LD Estruturado -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "WebSite",
-        "@id": "https://solitudescan.netlify.app/#website",
-        "url": "https://solitudescan.netlify.app/",
-        "name": "SolitudeScan",
-        "description": "Leia manhwas, mangás e manhuás online em alta definição.",
-        "inLanguage": "pt-BR",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://solitudescan.netlify.app/?busca={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
-      },
-      {
-        "@type": "Organization",
-        "@id": "https://solitudescan.netlify.app/#organization",
-        "name": "SolitudeScan",
-        "url": "https://solitudescan.netlify.app/",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://solitudescan.netlify.app/icon.png",
-          "width": 512,
-          "height": 512
-        },
-        "sameAs": [
-          "https://x.com/solitudescan",
-          "https://discord.gg/fX3wUZBvk"
-        ]
-      }
-    ]
-  }
-  </script>
-
-  <!-- Preload de Fontes (evita FOUT) -->
+  <!-- PERFORMANCE: Preconnect e Preload -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://zvpehjzbwastofjytogn.supabase.co">
+  
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Great+Vibes&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Great+Vibes&display=swap" media="print" onload="this.media='all'">
+  
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- ESTILOS E MANIFEST -->
   <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <meta name="theme-color" content="#ec4899">
 
-  <!-- Tema salvo antes do carregamento (evita flash) -->
-  <script>
-    try {
-      var t = localStorage.getItem('solitude_theme');
-      if (t === 'light') {
-        document.documentElement.classList.add('light');
-        document.documentElement.classList.remove('dark');
-      } else {
-        document.documentElement.classList.add('dark');
-        document.documentElement.classList.remove('light');
-      }
-      if (!t) {
-        var h = new Date().getHours();
-        if (h >= 18 || h < 6) {
-          document.documentElement.classList.add('dark');
-          document.documentElement.classList.remove('light');
-        }
-      }
-    } catch(e){}
-  </script>
-
-  <!-- Supabase (única inclusão no head) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- ACESSIBILIDADE: Skip Link -->
+  <a href="#mainContent" class="skip-link" id="skipLink">Pular para o conteúdo principal</a>
 </head>
 <body>
 
-  <!-- Skip Link (Acessibilidade) -->
-  <a href="#mangaContainer" class="skip-link" style="position:absolute;left:-9999px;top:0;background:#ec4899;color:#fff;padding:10px 16px;z-index:10000;border-radius:0 0 8px 0;font-weight:700;text-decoration:none;" onfocus="this.style.left='0'" onblur="this.style.left='-9999px'">Pular para o conteúdo</a>
-
-  <!-- Cookie Banner (LGPD) -->
-  <div id="cookieBanner" role="dialog" aria-live="polite" aria-label="Aviso de cookies" style="display:none; position:fixed; bottom:70px; left:10px; right:10px; max-width:500px; margin:auto; background:var(--fundo-card,#1a0f1e); border:1px solid var(--borda,#2a1a2e); border-radius:12px; padding:14px; z-index:9998; box-shadow:0 8px 24px rgba(0,0,0,0.4); font-size:0.75rem; color:var(--texto,#fff);">
-    <p style="margin:0 0 10px; line-height:1.4;">🍪 Usamos cookies para salvar seu histórico de leitura, favoritos e preferências. Ao continuar, você concorda com nossa <a onclick="abrirInfoLegal('privacidade')" style="color:#ec4899; text-decoration:underline; cursor:pointer;">Política de Privacidade</a>.</p>
-    <div style="display:flex; gap:8px;">
-      <button onclick="aceitarCookies()" style="flex:1; background:#ec4899; color:#fff; border:none; padding:8px 12px; border-radius:6px; font-weight:700; cursor:pointer; font-size:0.75rem;">Aceitar</button>
-      <button onclick="aceitarCookies()" style="flex:1; background:transparent; color:var(--texto,#fff); border:1px solid var(--borda,#2a1a2e); padding:8px 12px; border-radius:6px; font-weight:700; cursor:pointer; font-size:0.75rem;">Continuar</button>
-    </div>
-  </div>
-  <script>
-    try {
-      if (!localStorage.getItem('solitude_cookies_ok')) {
-        setTimeout(function(){ var c = document.getElementById('cookieBanner'); if(c) c.style.display='block'; }, 2000);
-      }
-      function aceitarCookies(){ try { localStorage.setItem('solitude_cookies_ok','1'); } catch(e){} var c=document.getElementById('cookieBanner'); if(c) c.style.display='none'; }
-    } catch(e){}
-  </script>
-
-  <noscript>
-    <div style="background:#7f1d1d;color:#fff;padding:20px;text-align:center;font-family:sans-serif;">
-      <h2 style="margin:0 0 10px;">JavaScript necessário</h2>
-      <p style="margin:0;">O SolitudeScan precisa do JavaScript habilitado para funcionar. Ative-o nas configurações do seu navegador.</p>
-    </div>
-  </noscript>
-
-  <div id="toastContainer" class="toast-container" aria-live="polite" role="status"></div>
-
   <!-- NAVBAR -->
   <nav class="navbar" role="navigation" aria-label="Navegação Principal">
-    <a href="#" class="logo" onclick="switchTab('tab-home'); return false;" aria-label="SolitudeScan - Página Inicial">
-      <i class="fa-solid fa-seedling" style="font-size:1.5rem;color:var(--primaria);" aria-hidden="true"></i>
-      <span class="logo-text">SolitudeScan</span>
-    </a>
-
-    <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Pesquisar obra, autor ou gênero..." oninput="filtrarObras()" aria-label="Campo de pesquisa de obras">
-      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+    <div class="navbar-brand">
+      <a href="/" aria-label="SolitudeScan - Página Inicial">
+        <span class="logo-text">Solitude<span class="highlight">Scan</span></span>
+      </a>
     </div>
+    
+    <div class="navbar-actions">
+      <button id="btnAdminNav" class="nav-btn" style="display: none;" aria-label="Painel Administrativo">
+        <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+        <span>Admin</span>
+      </button>
 
-    <div class="nav-actions">
-      <button class="btn-theme-toggle" onclick="alternarTema()" title="Alternar Tema Claro/Escuro" aria-label="Alternar tema">
-        <i id="iconeTemaBotao" class="fa-solid fa-moon" aria-hidden="true"></i>
+      <button class="nav-btn theme-toggle" id="themeToggleBtn" aria-label="Alternar tema claro/escuro">
+        <i class="fa-solid fa-moon" id="iconeTemaBotao" aria-hidden="true"></i>
       </button>
-      <button class="btn-theme-toggle" onclick="abrirNotificacoes()" title="Notificações de capítulos novos" aria-label="Abrir notificações">
-        <i class="fa-solid fa-bell" aria-hidden="true"></i>
-        <span class="notif-badge" id="notifBadge" style="display:none;" aria-live="polite">0</span>
+
+      <button class="nav-btn" onclick="abrirConfigPerfil()" aria-label="Abrir perfil do usuário">
+        <i class="fa-solid fa-user" aria-hidden="true"></i>
       </button>
-      <button class="btn-vip" onclick="abrirModalVip()" aria-label="Ver planos VIP"><i class="fa-solid fa-crown" aria-hidden="true"></i> VIP</button>
-      <button class="btn-admin" id="btnAdminNav" style="display:none;" onclick="abrirPainelAdmin()" title="Painel Administrativo" aria-label="Abrir Painel Admin">
-        <i class="fa-solid fa-gear" aria-hidden="true"></i>
-      </button>
+
+      <!-- View Deslogado -->
+      <div id="loggedOutView" class="auth-buttons">
+        <button class="btn-primary" onclick="fazerLogin()">Entrar</button>
+        <button class="btn-secondary" onclick="abrirCadastro()">Cadastrar</button>
+      </div>
+
+      <!-- View Logado -->
+      <div id="loggedInView" class="user-profile-mini" style="display: none;">
+        <img id="userAvatarImg" src="" alt="Avatar do usuário" class="user-avatar-mini">
+        <div class="user-info-mini">
+          <span id="userNameDisplay" class="user-name">Leitor</span>
+          <span id="userPlanBadge" class="plan-badge">Plano Gratuito</span>
+        </div>
+        <button class="btn-icon" onclick="fazerLogout()" aria-label="Sair da conta" title="Sair">
+          <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+        </button>
+      </div>
     </div>
   </nav>
 
-  <!-- MAIN -->
-  <main class="container" id="mainContent">
-
-    <!-- TAB HOME -->
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main class="container" id="mainContent" role="main">
+    
+    <!-- TAB: HOME -->
     <div id="tab-home" class="tab-content active" role="tabpanel" aria-label="Página inicial">
-
-      <section class="hero-banner" id="heroBannerSection" role="region" aria-label="Obra em destaque">
-        <div id="heroContent">
-          <div>
-            <span class="tag">DESTAQUE</span>
-            <span class="tag" id="heroGenreTag">SHOUJO</span>
-          </div>
-          <h1 class="hero-title" id="heroTitleDisplay">O Protagonista Está Obcecado Pela Minha Saúde</h1>
-        </div>
-      </section>
-
-      <section id="continueLendoSection" style="display:none;" aria-label="Continue lendo">
-        <div class="section-title">
-          <span>Continue Lendo</span>
-          <i class="fa-solid fa-clock-rotate-left title-icon" style="color:var(--primaria);" aria-hidden="true"></i>
-        </div>
-        <div class="carousel-track" id="continueLendoContainer"></div>
-      </section>
-
-      <section aria-label="Tendências da semana">
-        <div class="section-title">
-          <span>Tendências da Semana</span>
-          <i class="fa-solid fa-fire title-icon" style="color:var(--primaria);" aria-hidden="true"></i>
-        </div>
-        <div class="carousel-track" id="tendenciasContainer"></div>
-      </section>
-
-      <section aria-label="Filtros por gênero e tipo">
-        <div class="section-title">Gêneros e Tipos</div>
-        <div class="genre-chips" id="genreChipsContainer" role="tablist" aria-label="Filtrar por gênero">
-          <div class="chip active" onclick="filtrarGenero('Todos', this)" role="tab" aria-selected="true" tabindex="0">Todos</div>
-          <div class="chip" onclick="filtrarGenero('Favoritos', this)" role="tab" tabindex="0">Favoritos <i class="fa-solid fa-heart" style="color:var(--primaria);margin-left:6px;" aria-hidden="true"></i></div>
-          <div class="chip" onclick="filtrarGenero('Shoujo', this)" role="tab" tabindex="0">Shoujo</div>
-          <div class="chip" onclick="filtrarGenero('Shounen', this)" role="tab" tabindex="0">Shounen</div>
-          <div class="chip" onclick="filtrarGenero('Seinen', this)" role="tab" tabindex="0">Seinen</div>
-          <div class="chip" onclick="filtrarGenero('Josei', this)" role="tab" tabindex="0">Josei</div>
-          <div class="chip" onclick="filtrarGenero('Romance', this)" role="tab" tabindex="0">Romance</div>
-          <div class="chip" onclick="filtrarGenero('Ação', this)" role="tab" tabindex="0">Ação</div>
-          <div class="chip" onclick="filtrarGenero('Fantasia', this)" role="tab" tabindex="0">Fantasia</div>
-          <div class="chip" onclick="filtrarGenero('Isekai', this)" role="tab" tabindex="0">Isekai</div>
-          <div class="chip" onclick="filtrarGenero('Drama', this)" role="tab" tabindex="0">Drama</div>
-          <div class="chip" onclick="filtrarGenero('Comédia', this)" role="tab" tabindex="0">Comédia</div>
-          <div class="chip" onclick="filtrarGenero('Terror', this)" role="tab" tabindex="0">Terror</div>
-          <div class="chip" onclick="filtrarGenero('Suspense', this)" role="tab" tabindex="0">Suspense</div>
-          <div class="chip" onclick="filtrarGenero('Mistério', this)" role="tab" tabindex="0">Mistério</div>
-          <div class="chip" onclick="filtrarGenero('Psicológico', this)" role="tab" tabindex="0">Psicológico</div>
-          <div class="chip" onclick="filtrarGenero('Sobrenatural', this)" role="tab" tabindex="0">Sobrenatural</div>
-          <div class="chip" onclick="filtrarGenero('Histórico', this)" role="tab" tabindex="0">Histórico</div>
-          <div class="chip" onclick="filtrarGenero('Slice of Life', this)" role="tab" tabindex="0">Slice of Life</div>
-          <div class="chip" onclick="filtrarGenero('Aventura', this)" role="tab" tabindex="0">Aventura</div>
-          <div class="chip" onclick="filtrarGenero('Vida Escolar', this)" role="tab" tabindex="0">Vida Escolar</div>
-          <div class="chip" onclick="filtrarGenero('Sci-fi', this)" role="tab" tabindex="0">Sci-fi</div>
-          <div class="chip" onclick="filtrarGenero('Esportes', this)" role="tab" tabindex="0">Esportes</div>
-          <div class="chip" onclick="filtrarGenero('Música', this)" role="tab" tabindex="0">Música</div>
-          <div class="chip" onclick="filtrarGenero('Webtoon', this)" role="tab" tabindex="0">Webtoon</div>
-          <div class="chip" onclick="filtrarGenero('Manhwa', this)" role="tab" tabindex="0">Manhwa</div>
-          <div class="chip" onclick="filtrarGenero('Mangá', this)" role="tab" tabindex="0">Mangá</div>
-          <div class="chip" onclick="filtrarGenero('Manhua', this)" role="tab" tabindex="0">Manhua</div>
-        </div>
-
-        <div class="filter-controls">
-          <div class="custom-select">
-            <button type="button" class="custom-select-btn" onclick="abrirDropdown(event, 'ddOrdem')" aria-haspopup="listbox" aria-expanded="false">
-              <span id="labelOrdem">Mais Recentes</span>
-              <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-            </button>
-            <div class="custom-select-menu" id="ddOrdem" role="listbox" aria-label="Ordenação">
-              <button type="button" onclick="definirOrdem('recentes','Mais Recentes')" role="option">Mais Recentes</button>
-              <button type="button" onclick="definirOrdem('populares','Mais Populares')" role="option">Mais Populares</button>
-              <button type="button" onclick="definirOrdem('alfabetica','Ordem Alfabética')" role="option">Ordem Alfabética</button>
-              <button type="button" onclick="definirOrdem('avaliacao','Melhor Avaliados')" role="option">Melhor Avaliados</button>
-            </div>
-          </div>
-          <div class="custom-select">
-            <button type="button" class="custom-select-btn" onclick="abrirDropdown(event, 'ddStatus')" aria-haspopup="listbox" aria-expanded="false">
-              <span id="labelStatus">Todos os Status</span>
-              <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-            </button>
-            <div class="custom-select-menu" id="ddStatus" role="listbox" aria-label="Status">
-              <button type="button" onclick="definirStatus('Todos','Todos os Status')" role="option">Todos os Status</button>
-              <button type="button" onclick="definirStatus('Em Lançamento','Em Lançamento')" role="option">Em Lançamento</button>
-              <button type="button" onclick="definirStatus('Completo','Concluído')" role="option">Concluído</button>
-            </div>
+      
+      <!-- HERO BANNER -->
+      <section id="heroBannerSection" class="hero-section" aria-label="Destaques">
+        <div class="hero-slider" role="region" aria-roledescription="carrossel" aria-label="Obras em destaque">
+          <div class="hero-track" id="heroTrack">
+            <!-- Preenchido via JS -->
           </div>
         </div>
       </section>
 
+      <!-- BUSCA -->
+      <section class="search-section" aria-label="Busca de obras">
+        <div class="search-wrapper">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+          <input type="search" id="searchInput" class="search-input" placeholder="Buscar mangá, manhwa ou autor..." aria-label="Campo de busca de obras">
+        </div>
+      </section>
+
+      <!-- FILTROS E ORDENAÇÃO -->
+      <section class="filters-section" aria-label="Filtros de catálogo">
+        <select id="generoFiltro" class="filter-select" aria-label="Filtrar por gênero">
+          <option value="Todos">Todos os Gêneros</option>
+          <!-- Preenchido via JS -->
+        </select>
+        <select id="statusFiltro" class="filter-select" aria-label="Filtrar por status">
+          <option value="Todos">Todos os Status</option>
+          <option value="Em Lançamento">Em Lançamento</option>
+          <option value="Completo">Completo</option>
+          <option value="Hiato">Hiato</option>
+        </select>
+        <select id="ordemFiltro" class="filter-select" aria-label="Ordenar por">
+          <option value="recentes">Mais Recentes</option>
+          <option value="populares">Mais Populares</option>
+          <option value="avaliados">Melhor Avaliados</option>
+        </select>
+      </section>
+
+      <!-- CATÁLOGO PRINCIPAL -->
       <section aria-label="Últimas atualizações">
-        <div class="section-title" id="gridTitleSection">Últimas Atualizações</div>
-        <div class="manga-grid" id="mangaContainer" role="list" aria-live="polite"></div>
+        <h2 class="section-title">Últimas Atualizações</h2>
+        <div id="mangaContainer" class="manga-grid" role="list" aria-live="polite">
+          <!-- Preenchido via JS -->
+        </div>
       </section>
 
-      <section aria-label="Ranking semanal" style="margin-top:30px;">
-        <div class="section-title"><span>Ranking Semanal</span></div>
-        <div class="manga-grid" id="rankingContainer" role="list"></div>
+      <!-- TENDÊNCIAS -->
+      <section aria-label="Tendências da semana">
+        <h2 class="section-title">Tendências da Semana</h2>
+        <div id="tendenciasContainer" class="manga-grid" role="list" aria-live="polite">
+          <!-- Preenchido via JS -->
+        </div>
+      </section>
+
+      <!-- CONTINUE LENDO -->
+      <section id="continueLendoSection" aria-label="Continue lendo" style="display: none;">
+        <h2 class="section-title">Continue Lendo</h2>
+        <div id="continueLendoContainer" class="manga-grid" role="list" aria-live="polite">
+          <!-- Preenchido via JS -->
+        </div>
+      </section>
+
+      <!-- RANKING -->
+      <section aria-label="Ranking de obras">
+        <h2 class="section-title">Ranking</h2>
+        <div id="rankingContainer" class="ranking-list" role="list" aria-live="polite">
+          <!-- Preenchido via JS -->
+        </div>
       </section>
 
     </div>
 
-    <!-- TAB VIP -->
+    <!-- TAB: VIP -->
     <div id="tab-vip" class="tab-content" role="tabpanel" aria-label="Planos VIP">
-      <div class="section-title">Planos VIP SolitudeScan</div>
-      <p style="color:var(--texto-claro);font-size:0.85rem;">Assine o VIP para liberar capítulos antecipados sem anúncios instantaneamente!</p>
+      <section class="vip-section">
+        <h2 class="section-title">Torne-se VIP</h2>
+        <p class="vip-description">Apoie o SolitudeScan e tenha acesso a capítulos antecipados, sem anúncios e com qualidade máxima.</p>
+        
+        <div class="vip-plans-grid">
+          <div class="vip-card">
+            <h3>VIP Mensal</h3>
+            <p class="price">R$ 14,90<span>/mês</span></p>
+            <ul class="vip-benefits">
+              <li><i class="fa-solid fa-check"></i> Capítulos antecipados</li>
+              <li><i class="fa-solid fa-check"></i> Leitura sem anúncios</li>
+              <li><i class="fa-solid fa-check"></i> Suporte prioritário</li>
+            </ul>
+            <button class="btn-primary full-width" onclick="abrirModalPix('VIP Mensal', 'R$ 14,90')">Assinar Agora</button>
+          </div>
+          
+          <div class="vip-card featured">
+            <div class="vip-badge">Mais Popular</div>
+            <h3>VIP Trimestral</h3>
+            <p class="price">R$ 39,90<span>/3 meses</span></p>
+            <ul class="vip-benefits">
+              <li><i class="fa-solid fa-check"></i> Todos os benefícios Mensais</li>
+              <li><i class="fa-solid fa-check"></i> Economia de 11%</li>
+              <li><i class="fa-solid fa-check"></i> Badge exclusiva no perfil</li>
+            </ul>
+            <button class="btn-primary full-width" onclick="abrirModalPix('VIP Trimestral', 'R$ 39,90')">Assinar Agora</button>
+          </div>
 
-      <div class="vip-plans-grid">
-        <div class="plan-card">
-          <div class="plan-title">VIP Mensal</div>
-          <div class="plan-price">R$ 10,00<span style="font-size:0.8rem;color:var(--texto-claro);">/mês</span></div>
-          <ul class="plan-features">
-            <li><i class="fa-solid fa-check" style="color:var(--primaria);" aria-hidden="true"></i> Acesso antecipado a Manhwas VIP</li>
-            <li><i class="fa-solid fa-check" style="color:var(--primaria);" aria-hidden="true"></i> Zero Anúncios</li>
-            <li><i class="fa-solid fa-check" style="color:var(--primaria);" aria-hidden="true"></i> Badge VIP Rosa no perfil</li>
-          </ul>
-          <button class="btn-buy" onclick="abrirModalPix('VIP Mensal','R$ 10,00')">Assinar Mensal</button>
+          <div class="vip-card">
+            <h3>VIP Anual</h3>
+            <p class="price">R$ 149,90<span>/ano</span></p>
+            <ul class="vip-benefits">
+              <li><i class="fa-solid fa-check"></i> Todos os benefícios Trimestrais</li>
+              <li><i class="fa-solid fa-check"></i> Economia de 16%</li>
+              <li><i class="fa-solid fa-check"></i> Acesso a conteúdos exclusivos</li>
+            </ul>
+            <button class="btn-primary full-width" onclick="abrirModalPix('VIP Anual', 'R$ 149,90')">Assinar Agora</button>
+          </div>
         </div>
-
-        <div class="plan-card popular">
-          <span style="position:absolute;top:-10px;right:15px;background:var(--primaria);font-size:0.65rem;padding:2px 8px;border-radius:10px;font-weight:800;color:#fff;">MAIS POPULAR</span>
-          <div class="plan-title">VIP Trimestral</div>
-          <div class="plan-price">R$ 25,00<span style="font-size:0.8rem;color:var(--texto-claro);">/3 meses</span></div>
-          <ul class="plan-features">
-            <li><i class="fa-solid fa-check" style="color:var(--primaria);" aria-hidden="true"></i> Economize no valor total</li>
-            <li><i class="fa-solid fa-check" style="color:var(--primaria);" aria-hidden="true"></i> Leitura em HD no Celular e PC</li>
-            <li><i class="fa-solid fa-check" style="color:var(--primaria);" aria-hidden="true"></i> Acesso total ao catálogo VIP</li>
-          </ul>
-          <button class="btn-buy" onclick="abrirModalPix('VIP Trimestral','R$ 25,00')">Assinar Trimestral</button>
-        </div>
-
-        <div class="plan-card">
-          <div class="plan-title">VIP Anual</div>
-          <div class="plan-price">R$ 80,00<span style="font-size:0.8rem;color:var(--texto-claro);">/ano</span></div>
-          <ul class="plan-features">
-            <li><i class="fa-solid fa-check" style="color:var(--primaria);" aria-hidden="true"></i> Maior desconto do site</li>
-            <li><i class="fa-solid fa-check" style="color:var(--primaria);" aria-hidden="true"></i> Suporte prioritário</li>
-            <li><i class="fa-solid fa-check" style="color:var(--primaria);" aria-hidden="true"></i> Todas as vantagens liberadas</li>
-          </ul>
-          <button class="btn-buy" onclick="abrirModalPix('VIP Anual','R$ 80,00')">Assinar Anual</button>
-        </div>
-      </div>
+      </section>
     </div>
 
-    <!-- TAB PERFIL -->
+    <!-- TAB: PERFIL -->
     <div id="tab-profile" class="tab-content" role="tabpanel" aria-label="Perfil do usuário">
-      <div id="loggedOutView">
-        <div class="login-box">
-          <i class="fa-solid fa-right-to-bracket" style="font-size:2.5rem;color:var(--primaria);margin-bottom:12px;" aria-hidden="true"></i>
-          <h2 style="font-size:1.2rem;margin-bottom:8px;">Acesse sua conta</h2>
-          <p style="color:var(--texto-claro);font-size:0.8rem;margin-bottom:20px;">Entre para ver seu perfil, histórico e planos VIP.</p>
-          <button class="btn-buy" onclick="fazerLogin()">Entrar / Fazer Login</button>
-        </div>
-      </div>
-
-      <div id="loggedInView" style="display:none;">
-        <div class="profile-banner">
-          <div class="profile-header">
-            <div class="avatar-wrapper">
-              <img id="userAvatarImg" class="avatar-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%231a0f1e'/%3E%3Ccircle cx='32' cy='24' r='12' fill='%23ec4899'/%3E%3Cpath d='M12 56c2-12 10-18 20-18s18 6 20 18z' fill='%23ec4899'/%3E%3C/svg%3E" alt="Avatar do usuário">
-            </div>
-            <div>
-              <span class="welcome-text" id="welcomeText">Bem-vindo de volta,</span>
-              <h2 class="user-name" id="userNameDisplay">LeitorSolitude</h2>
-              <span class="user-plan-badge" id="userPlanBadge">Plano Gratuito</span>
-            </div>
+      <section class="profile-section">
+        <div class="profile-header">
+          <img id="profileAvatarLarge" src="" alt="Avatar grande" class="profile-avatar-large">
+          <div>
+            <h2 id="profileNameLarge">Nome do Usuário</h2>
+            <span id="profilePlanLarge" class="plan-badge">Plano Gratuito</span>
           </div>
         </div>
 
-        <div class="section-title">Favoritos</div>
-        <div class="manga-grid" id="favoritosContainer" role="list"></div>
-
-        <div class="section-title" style="margin-top:20px;">Histórico de Leitura</div>
-        <div class="manga-grid" id="historyContainer" role="list"></div>
-
-        <div class="section-title" style="margin-top:20px;">Configurações do Perfil</div>
-        <div class="settings-group">
-          <div class="settings-item" onclick="abrirConfigPerfil()" role="button" tabindex="0">
-            <div class="settings-info">
-              <div class="settings-icon"><i class="fa-solid fa-user-pen" aria-hidden="true"></i></div>
-              <div>
-                <div class="settings-title">Editar Perfil Completo</div>
-                <div class="settings-desc">Foto da galeria, Nome, E-mail e Telefone</div>
-              </div>
-            </div>
-            <i class="fa-solid fa-chevron-right" style="color:var(--texto-claro);font-size:0.8rem;" aria-hidden="true"></i>
-          </div>
-
-          <div class="settings-item danger" onclick="fazerLogout()" role="button" tabindex="0">
-            <div class="settings-info">
-              <div class="settings-icon"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i></div>
-              <div>
-                <div class="settings-title" style="color:var(--erro);">Sair da Conta</div>
-                <div class="settings-desc">Deslogar do SolitudeScan neste dispositivo</div>
-              </div>
-            </div>
-            <i class="fa-solid fa-chevron-right" style="color:var(--texto-claro);font-size:0.8rem;" aria-hidden="true"></i>
-          </div>
+        <div class="profile-actions">
+          <button class="btn-secondary" onclick="abrirConfigPerfil()">
+            <i class="fa-solid fa-gear" aria-hidden="true"></i> Editar Perfil
+          </button>
+          <button class="btn-secondary" onclick="exportarDadosUsuario()">
+            <i class="fa-solid fa-download" aria-hidden="true"></i> Exportar Meus Dados
+          </button>
         </div>
-      </div>
+
+        <div class="profile-tabs">
+          <button class="tab-btn active" onclick="switchTabProfile('historico', this)">Histórico</button>
+          <button class="tab-btn" onclick="switchTabProfile('favoritos', this)">Favoritos</button>
+          <button class="tab-btn" onclick="switchTabProfile('listas', this)">Minhas Listas</button>
+        </div>
+
+        <div id="profileHistorico" class="profile-tab-content active">
+          <div id="historicoContainer" class="manga-grid" role="list"></div>
+        </div>
+        <div id="profileFavoritos" class="profile-tab-content">
+          <div id="favoritosContainer" class="manga-grid" role="list"></div>
+        </div>
+        <div id="profileListas" class="profile-tab-content">
+          <div id="listasContainer" class="listas-grid" role="list"></div>
+        </div>
+      </section>
     </div>
 
   </main>
 
-  <!-- MODAIS -->
+  <!-- FOOTER -->
+  <footer id="siteFooter" class="site-footer" role="contentinfo">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <span class="logo-text">Solitude<span class="highlight">Scan</span></span>
+        <p>Leitura profissional de manhwas, mangás e manhuás.</p>
+      </div>
+      <div class="footer-links">
+        <a href="/termos">Termos de Uso</a>
+        <a href="/privacidade">Política de Privacidade</a>
+        <a href="/contato">Contato</a>
+        <a href="/denuncia">Canal de Denúncia</a>
+      </div>
+      <div class="footer-social">
+        <a href="https://discord.gg/fX3wUZBvk" target="_blank" rel="noopener noreferrer" aria-label="Discord">
+          <i class="fa-brands fa-discord" aria-hidden="true"></i>
+        </a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 SolitudeScan. Todos os direitos reservados.</p>
+    </div>
+  </footer>
 
-  <!-- Login -->
+  <!-- ================= MODAIS ================= -->
+
+  <!-- MODAL: LOGIN -->
   <div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
     <div class="modal-content">
       <div class="modal-header">
         <h3 id="loginModalTitle"><i class="fa-solid fa-right-to-bracket" style="color:var(--primaria);" aria-hidden="true"></i> Entrar na Conta</h3>
-        <i class="fa-solid fa-xmark close-btn" onclick="toggleModal('loginModal')" role="button" aria-label="Fechar modal" tabindex="0"></i>
+        <button class="close-btn" onclick="toggleModal('loginModal')" aria-label="Fechar modal">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
       </div>
-      <form onsubmit="executarLoginCustom(event)">
+      <form id="loginForm" onsubmit="executarLoginCustom(event)" class="modal-form">
         <div class="form-group">
           <label for="loginEmail">E-mail</label>
-          <input type="email" id="loginEmail" placeholder="seuemail@exemplo.com" required autocomplete="email">
+          <input type="email" id="loginEmail" required autocomplete="email" aria-required="true">
         </div>
         <div class="form-group">
           <label for="loginSenha">Senha</label>
-          <input type="password" id="loginSenha" placeholder="Sua senha" required autocomplete="current-password">
+          <input type="password" id="loginSenha" required autocomplete="current-password" aria-required="true">
         </div>
-        <button type="submit" class="btn-buy" style="margin-top:10px;">Entrar</button>
-        <button type="button" class="btn-buy" onclick="abrirCadastro()" style="background:transparent;border:1px solid var(--primaria);color:var(--rosa-claro);margin-top:8px;">Criar Nova Conta</button>
+        <button type="submit" class="btn-primary full-width">Entrar</button>
+        <p class="modal-footer-text">
+          Não tem conta? <a href="#" onclick="abrirCadastro(); return false;">Cadastre-se</a>
+        </p>
       </form>
     </div>
   </div>
 
-  <!-- Cadastro -->
+  <!-- MODAL: CADASTRO -->
   <div class="modal" id="registerModal" role="dialog" aria-modal="true" aria-labelledby="registerModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 id="registerModalTitle"><i class="fa-solid fa-user-plus" style="color:var(--primaria);" aria-hidden="true"></i> Criar Conta SolitudeScan</h3>
-        <i class="fa-solid fa-xmark close-btn" onclick="toggleModal('registerModal')" role="button" aria-label="Fechar modal" tabindex="0"></i>
+        <h3 id="registerModalTitle"><i class="fa-solid fa-user-plus" style="color:var(--primaria);" aria-hidden="true"></i> Criar Conta</h3>
+        <button class="close-btn" onclick="toggleModal('registerModal')" aria-label="Fechar modal">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
       </div>
-      <form onsubmit="executarCadastro(event)">
+      <form id="registerForm" onsubmit="executarCadastro(event)" class="modal-form">
         <div class="form-group">
           <label for="regEmail">E-mail</label>
-          <input type="email" id="regEmail" placeholder="seuemail@exemplo.com" required autocomplete="email">
+          <input type="email" id="regEmail" required autocomplete="email" aria-required="true">
         </div>
         <div class="form-group">
-          <label for="regSenha">Senha (mínimo 8 caracteres, com letras, números e um símbolo)</label>
-          <input type="password" id="regSenha" placeholder="Crie uma senha forte" required autocomplete="new-password">
+          <label for="regSenha">Senha</label>
+          <input type="password" id="regSenha" required autocomplete="new-password" aria-required="true" minlength="8" placeholder="Mínimo 8 caracteres, letras, números e símbolo">
         </div>
         <div class="form-group">
           <label for="regSenhaConf">Confirmar Senha</label>
-          <input type="password" id="regSenhaConf" placeholder="Repita a senha exatamente" required autocomplete="new-password">
+          <input type="password" id="regSenhaConf" required autocomplete="new-password" aria-required="true">
         </div>
-        <button type="submit" class="btn-buy"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Criar Conta Segura</button>
+        <button type="submit" class="btn-primary full-width">Cadastrar</button>
+        <p class="modal-footer-text">
+          Já tem conta? <a href="#" onclick="fazerLogin(); return false;">Faça login</a>
+        </p>
       </form>
     </div>
   </div>
 
-  <!-- Notificações -->
-  <div class="modal" id="notifModal" role="dialog" aria-modal="true" aria-labelledby="notifModalTitle">
-    <div class="modal-content" style="max-width:480px;">
-      <div class="modal-header">
-        <h3 id="notifModalTitle">Notificações</h3>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <i class="fa-solid fa-bell" style="color:var(--primaria);" aria-hidden="true"></i>
-          <i class="fa-solid fa-xmark close-btn" onclick="toggleModal('notifModal')" role="button" aria-label="Fechar modal" tabindex="0"></i>
-        </div>
-      </div>
-      <div id="notifListContainer" style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;"></div>
-    </div>
-  </div>
-
-  <!-- VIP -->
-  <div class="modal" id="vipModal" role="dialog" aria-modal="true" aria-labelledby="vipModalTitle">
-    <div class="modal-content" style="text-align:center;max-width:450px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <h3 id="vipModalTitle" style="color:var(--primaria);"><i class="fa-solid fa-crown" aria-hidden="true"></i> Seja Membro VIP</h3>
-        <i class="fa-solid fa-xmark close-btn" onclick="toggleModal('vipModal')" role="button" aria-label="Fechar modal" tabindex="0"></i>
-      </div>
-      <p style="font-size:0.9rem;opacity:0.8;margin-bottom:20px;">Ganhe acesso antecipado e leia obras exclusivas sem anúncios!</p>
-      <div style="background:var(--fundo);border:1px solid var(--primaria);border-radius:12px;padding:15px;margin-bottom:20px;">
-        <h4 style="margin-bottom:5px;">Plano VIP Mensal</h4>
-        <span style="font-size:1.4rem;font-weight:bold;color:var(--sucesso);">R$ 10,00 / mês</span>
-      </div>
-      <p style="font-size:0.75rem;color:var(--texto-claro);">Escolha seu plano abaixo e conclua o pagamento em até 4 minutos e 30 segundos. A ativação é feita após conferência da administração.</p>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-top:15px;">
-        <button class="btn-buy" onclick="abrirModalPix('VIP Mensal','R$ 10,00')">Assinar Mensal</button>
-        <button class="btn-buy" onclick="abrirModalPix('VIP Trimestral','R$ 25,00')">Assinar Trimestral</button>
-        <button class="btn-buy" onclick="abrirModalPix('VIP Anual','R$ 80,00')">Assinar Anual</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Pix -->
-  <div class="modal" id="pixModal" role="dialog" aria-modal="true" aria-labelledby="pixModalTitle">
-    <div class="modal-content" style="text-align:left;">
-      <div class="modal-header">
-        <h3 id="pixModalTitle"><i class="fa-solid fa-qrcode" style="color:var(--primaria);" aria-hidden="true"></i> Pagamento Seguro SolitudeScan</h3>
-        <i class="fa-solid fa-xmark close-btn" onclick="fecharPixModal()" role="button" aria-label="Fechar modal" tabindex="0"></i>
-      </div>
-      <p id="pixDetalhePlano" style="color:var(--rosa-claro);font-weight:700;margin-bottom:12px;text-align:center;"></p>
-
-      <div id="pixPassoDados">
-        <form onsubmit="gerarCobrancaPix(event)">
-          <div class="form-group">
-            <label for="pixNome">Seu nome completo</label>
-            <input type="text" id="pixNome" placeholder="Nome para conferência do pagamento" required autocomplete="name">
-          </div>
-          <div class="form-group">
-            <label for="pixEmail">E-mail para ativação do VIP</label>
-            <input type="email" id="pixEmail" placeholder="O VIP será ativado neste e-mail" required autocomplete="email">
-          </div>
-          <button type="submit" class="btn-buy"><i class="fa-solid fa-bolt" aria-hidden="true"></i> Gerar Cobrança Pix</button>
-        </form>
-      </div>
-
-      <div id="pixPassoPagamento" style="display:none;">
-        <div class="pix-timer-box">
-          <p style="font-size:0.7rem;color:var(--texto-claro);margin-bottom:4px;">Tempo restante para pagar</p>
-          <div class="pix-timer" id="pixTimer" aria-live="polite">04:30</div>
-        </div>
-        <div style="background:var(--fundo);border:1px solid var(--primaria);padding:12px;border-radius:10px;margin-bottom:15px;font-size:0.8rem;">
-          <p style="color:var(--primaria);font-weight:bold;margin-bottom:6px;"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Dados de Destino:</p>
-          <p><strong>Banco:</strong> Nubank / Inter</p>
-          <p><strong>Titular:</strong> SolitudeScan Oficial</p>
-          <p><strong>Chave PIX:</strong> solitudescanoficial@gmail.com</p>
-        </div>
-        <button class="btn-buy" onclick="copiarChavePix()" style="margin-bottom:8px;"><i class="fa-solid fa-copy" aria-hidden="true"></i> Copiar Chave Pix</button>
-        <button class="btn-buy" id="btnConfirmarPix" onclick="concluirPagamentoPix()" style="background:linear-gradient(135deg,var(--sucesso),#059669);">
-          <i class="fa-solid fa-check-double" aria-hidden="true"></i> Já paguei — Enviar para análise
-        </button>
-        <p id="pixMsgExpirado" style="display:none;font-size:0.7rem;color:var(--erro);margin-top:10px;text-align:center;">
-          Tempo esgotado. Esta cobrança foi cancelada automaticamente. Gere uma nova solicitação.
-        </p>
-        <p style="font-size:0.65rem;color:var(--texto-claro);margin-top:10px;text-align:center;">
-          <i class="fa-solid fa-lock" aria-hidden="true"></i> O VIP é liberado somente após a administração conferir o e-mail e o pagamento recebido.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Editar Perfil -->
+  <!-- MODAL: CONFIGURAÇÕES DE PERFIL -->
   <div class="modal" id="configModal" role="dialog" aria-modal="true" aria-labelledby="configModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 id="configModalTitle"><i class="fa-solid fa-user-gear" style="color:var(--primaria);" aria-hidden="true"></i> Editar Perfil</h3>
-        <i class="fa-solid fa-xmark close-btn" onclick="toggleModal('configModal')" role="button" aria-label="Fechar modal" tabindex="0"></i>
+        <h3 id="configModalTitle"><i class="fa-solid fa-gear" style="color:var(--primaria);" aria-hidden="true"></i> Editar Perfil</h3>
+        <button class="close-btn" onclick="toggleModal('configModal')" aria-label="Fechar modal">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
       </div>
-      <form onsubmit="salvarPerfil(event)">
-        <div class="form-group">
-          <label>Foto de Perfil (toque para escolher da galeria)</label>
-          <div class="avatar-picker" onclick="document.getElementById('editFotoArquivo').click()" role="button" tabindex="0" aria-label="Trocar foto de perfil">
-            <img id="editFotoPreview" class="avatar-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%231a0f1e'/%3E%3Ccircle cx='32' cy='24' r='12' fill='%23ec4899'/%3E%3Cpath d='M12 56c2-12 10-18 20-18s18 6 20 18z' fill='%23ec4899'/%3E%3C/svg%3E" alt="Prévia da foto">
-            <span class="avatar-picker-label"><i class="fa-solid fa-camera" aria-hidden="true"></i> Trocar Foto da Galeria</span>
-          </div>
-          <input type="file" id="editFotoArquivo" accept="image/*" style="display:none;" onchange="previewFotoPerfil(event)">
+      <form id="configForm" onsubmit="salvarPerfil(event)" class="modal-form">
+        <div class="form-group text-center">
+          <img id="editFotoPreview" src="" alt="Preview do avatar" class="avatar-preview-large">
+          <label for="editFotoArquivo" class="btn-secondary small">Alterar Foto</label>
+          <input type="file" id="editFotoArquivo" accept="image/*" style="display: none;" onchange="previewFotoPerfil(event)">
         </div>
         <div class="form-group">
-          <label for="editNome">Nome do Usuário</label>
-          <input type="text" id="editNome" required autocomplete="username">
+          <label for="editNome">Nome de Exibição</label>
+          <input type="text" id="editNome" required maxlength="50">
         </div>
         <div class="form-group">
           <label for="editEmail">E-mail</label>
-          <input type="email" id="editEmail" required autocomplete="email">
+          <input type="email" id="editEmail" readonly class="input-readonly">
         </div>
         <div class="form-group">
-          <label for="editTel">Telefone</label>
-          <input type="tel" id="editTel" placeholder="(00) 90000-0000" required autocomplete="tel">
+          <label for="editTel">Telefone (Opcional)</label>
+          <input type="tel" id="editTel" placeholder="(00) 00000-0000">
         </div>
-        <button type="submit" class="btn-buy">Salvar Alterações</button>
+        <button type="submit" class="btn-primary full-width">Salvar Alterações</button>
       </form>
     </div>
   </div>
 
-  <!-- Detalhes da Obra -->
-  <div class="modal" id="detalhesModal" role="dialog" aria-modal="true" aria-labelledby="detalhesTitulo">
-    <div class="modal-content" style="max-width:700px;max-height:90vh;overflow-y:auto;">
+  <!-- MODAL: CONFIRMAÇÃO -->
+  <div class="modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitulo">
+    <div class="modal-content modal-small">
       <div class="modal-header">
-        <h3 id="detalhesTitulo" style="color:var(--primaria);">Detalhes da Obra</h3>
-        <i class="fa-solid fa-xmark close-btn" onclick="toggleModal('detalhesModal')" role="button" aria-label="Fechar modal" tabindex="0"></i>
+        <h3 id="confirmTitulo">Confirmação</h3>
+      </div>
+      <div class="modal-body">
+        <p id="confirmMsg">Tem certeza que deseja realizar esta ação?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="toggleModal('confirmModal')">Cancelar</button>
+        <button id="confirmBtnOk" class="btn-danger">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PIX / VIP -->
+  <div class="modal" id="vipModal" role="dialog" aria-modal="true" aria-labelledby="vipModalTitle" style="display: none;">
+    <!-- Conteúdo movido para o pixModal para simplificar o fluxo -->
+  </div>
+
+  <div class="modal" id="pixModal" role="dialog" aria-modal="true" aria-labelledby="pixModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="pixModalTitle"><i class="fa-brands fa-pix" style="color:var(--primaria);" aria-hidden="true"></i> Pagamento via Pix</h3>
+        <button class="close-btn" onclick="fecharPixModal()" aria-label="Fechar modal">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      
+      <div class="pix-info">
+        <p>Plano selecionado: <strong id="pixDetalhePlano">---</strong></p>
       </div>
 
-      <div class="work-details-header">
-        <img id="detalhesBanner" class="work-details-banner" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 400'%3E%3Crect width='1200' height='400' fill='%231a0f1e'/%3E%3C/svg%3E" alt="Banner da obra" loading="lazy">
-      </div>
-
-      <div class="work-details-content">
-        <img id="detalhesCapa" class="work-poster" src="" alt="Capa da obra" loading="lazy">
-        <div style="flex:1;">
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
-            <span id="detalhesTipo" class="tag">MANHWA</span>
-            <span id="detalhesStatus" class="tag" style="border-color:var(--sucesso);color:var(--sucesso);">LANÇAMENTO</span>
-          </div>
-          <p id="detalhesGenero" style="font-size:0.75rem;color:var(--primaria);font-weight:bold;margin-bottom:4px;"></p>
-          <p id="detalhesAutor" style="font-size:0.75rem;color:var(--texto-claro);margin-bottom:8px;"></p>
-
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-            <div class="rating-dots" id="ratingDotsContainer" role="radiogroup" aria-label="Avaliar obra">
-              <span class="rating-dot" onclick="avaliarObra(obraAtualId,1)" role="radio" tabindex="0" aria-label="1 estrela"></span>
-              <span class="rating-dot" onclick="avaliarObra(obraAtualId,2)" role="radio" tabindex="0" aria-label="2 estrelas"></span>
-              <span class="rating-dot" onclick="avaliarObra(obraAtualId,3)" role="radio" tabindex="0" aria-label="3 estrelas"></span>
-              <span class="rating-dot" onclick="avaliarObra(obraAtualId,4)" role="radio" tabindex="0" aria-label="4 estrelas"></span>
-              <span class="rating-dot" onclick="avaliarObra(obraAtualId,5)" role="radio" tabindex="0" aria-label="5 estrelas"></span>
-            </div>
-            <span id="notaExibicao" style="font-size:0.85rem;font-weight:bold;" aria-live="polite">4.9 / 5.0</span>
-          </div>
-
-          <p id="detalhesSinopse" style="font-size:0.8rem;color:var(--texto);line-height:1.4;margin-bottom:12px;"></p>
+      <!-- Passo 1: Dados -->
+      <form id="pixPassoDados" class="modal-form" onsubmit="gerarCobrancaPix(event)">
+        <div class="form-group">
+          <label for="pixNome">Nome Completo</label>
+          <input type="text" id="pixNome" required placeholder="Seu nome para conferência">
         </div>
-      </div>
-
-      <div style="border-top:1px solid var(--borda);padding-top:12px;margin-top:10px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-          <h4 style="font-size:0.9rem;color:var(--rosa-claro);"><i class="fa-solid fa-list-ul" aria-hidden="true"></i> Lista de Capítulos</h4>
-          <button onclick="inverterOrdemCapitulos()" style="background:rgba(236,72,153,0.15);border:1px solid var(--primaria);color:var(--rosa-claro);font-size:0.7rem;padding:4px 10px;border-radius:6px;cursor:pointer;" aria-label="Inverter ordem dos capítulos">
-            Inverter Ordem
-          </button>
+        <div class="form-group">
+          <label for="pixEmail">E-mail</label>
+          <input type="email" id="pixEmail" required placeholder="O VIP será ativado neste e-mail">
         </div>
-        <div id="listaCapitulosContainer" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;" role="list"></div>
-        <button id="btnFavoritar" onclick="alternarFavorito()" style="margin-top:10px;width:100%;background:rgba(236,72,153,0.15);border:1px solid var(--primaria);color:var(--rosa-claro);padding:8px;border-radius:8px;cursor:pointer;">
-          <i class="fa-regular fa-heart" aria-hidden="true"></i> Favoritar Obra
+        <button type="submit" class="btn-primary full-width">Gerar Cobrança Pix</button>
+      </form>
+
+      <!-- Passo 2: Pagamento -->
+      <div id="pixPassoPagamento" class="modal-form" style="display: none;">
+        <div class="pix-timer-container">
+          <p>Tempo restante para pagamento:</p>
+          <div id="pixTimer" class="pix-timer">04:30</div>
+        </div>
+        
+        <div class="pix-key-container">
+          <p>Chave Pix (E-mail):</p>
+          <div class="pix-key-box">
+            <code id="pixChaveDisplay">pix@solitudescan.com</code>
+            <button class="btn-icon" onclick="copiarChavePix()" aria-label="Copiar chave pix" title="Copiar">
+              <i class="fa-regular fa-copy" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+
+        <p class="pix-instructions">1. Abra o app do seu banco.<br>2. Escolha pagar via Pix (copia e cola ou chave).<br>3. Após pagar, clique em "Já realizei o pagamento".</p>
+
+        <button id="btnConfirmarPix" class="btn-primary full-width" onclick="concluirPagamentoPix()">Já realizei o pagamento</button>
+        <p id="pixMsgExpirado" class="error-text" style="display: none; text-align: center; margin-top: 10px;">
+          Tempo esgotado! Esta cobrança expirou.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETALHES DA OBRA -->
+  <div class="modal" id="detalhesModal" role="dialog" aria-modal="true" aria-labelledby="detalhesModalTitle">
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h3 id="detalhesModalTitle">Detalhes da Obra</h3>
+        <button class="close-btn" onclick="toggleModal('detalhesModal')" aria-label="Fechar modal">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="modal-body" id="detalhesModalBody">
+        <!-- Preenchido via JS -->
+      </div>
+      <div class="modal-footer">
+        <button id="btnFavoritar" class="btn-secondary" onclick="alternarFavorito()">
+          <i class="fa-regular fa-heart" aria-hidden="true"></i> Favoritar
+        </button>
+        <button class="btn-primary" onclick="abrirLeitor()">
+          <i class="fa-solid fa-book-open" aria-hidden="true"></i> Ler Primeiro Capítulo
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Leitor -->
-  <div class="modal" id="readerModal" role="dialog" aria-modal="true" aria-labelledby="readerTitle">
-    <div class="modal-content" style="max-width:900px;height:95vh;display:flex;flex-direction:column;">
-
-      <div class="reader-top-bar">
-        <div>
-          <h3 id="readerTitle" style="color:var(--primaria);font-size:0.95rem;">Título da Obra</h3>
-          <p id="readerCap" style="color:var(--rosa-claro);font-size:0.75rem;margin-top:2px;"></p>
-        </div>
-        <div class="reader-controls-floating">
-          <span class="reader-progress" id="readerProgress" aria-live="polite">0%</span>
-          <button onclick="ajustarZoomLeitor(-10)" class="btn-reader-action" title="Diminuir Zoom" aria-label="Diminuir zoom"><i class="fa-solid fa-magnifying-glass-minus" aria-hidden="true"></i></button>
-          <button onclick="ajustarZoomLeitor(10)" class="btn-reader-action" title="Aumentar Zoom" aria-label="Aumentar zoom"><i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i></button>
-          <button onclick="mudarCapituloLeitor(-1,event)" class="btn-buy" style="padding:4px 10px;font-size:0.7rem;width:auto;" aria-label="Capítulo anterior"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Ant.</button>
-          <button onclick="mudarCapituloLeitor(1,event)" class="btn-buy" style="padding:4px 10px;font-size:0.7rem;width:auto;" aria-label="Próximo capítulo">Próx. <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
-          <button onclick="alternarModoImersivo()" class="btn-reader-action" title="Modo Imersivo" aria-label="Modo imersivo"><i class="fa-solid fa-eye" aria-hidden="true"></i></button>
-          <button onclick="alternarTelaCheia()" class="btn-theme-toggle" title="Tela Cheia" aria-label="Tela cheia"><i class="fa-solid fa-expand" aria-hidden="true"></i></button>
-          <i class="fa-solid fa-xmark close-btn" style="font-size:1.2rem;margin-left:10px;" onclick="fecharLeitor()" role="button" aria-label="Fechar leitor" tabindex="0"></i>
-        </div>
-      </div>
-
-      <div id="readerCascataContainer" style="flex:1;background:#000;padding:10px;border-radius:10px;overflow-y:auto;text-align:center;scroll-behavior:smooth;" role="region" aria-label="Páginas do capítulo" tabindex="0">
-        <p style="font-size:0.75rem;color:var(--texto-claro);margin-bottom:10px;">Use as setas ← → do teclado ou deslize para trocar de capítulo</p>
-      </div>
-
-      <button class="btn-reader-action btn-sair-imersivo" onclick="alternarModoImersivo()" title="Sair do Modo Imersivo" aria-label="Sair do modo imersivo">
-        <i class="fa-solid fa-eye-low-vision" aria-hidden="true"></i>
+  <!-- MODAL: LEITOR -->
+  <div class="modal reader-modal" id="readerModal" role="dialog" aria-modal="true" aria-label="Leitor de capítulos">
+    <div class="reader-header">
+      <button class="btn-icon" onclick="fecharLeitor()" aria-label="Fechar leitor">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
       </button>
+      <span id="readerTitle" class="reader-title">Título do Capítulo</span>
+      <div class="reader-controls">
+        <button class="btn-icon" onclick="ajustarZoom(-10)" aria-label="Diminuir zoom">
+          <i class="fa-solid fa-magnifying-glass-minus" aria-hidden="true"></i>
+        </button>
+        <span id="zoomLevel">100%</span>
+        <button class="btn-icon" onclick="ajustarZoom(10)" aria-label="Aumentar zoom">
+          <i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i>
+        </button>
+        <button class="btn-icon" onclick="alternarModoImersivo()" aria-label="Modo imersivo">
+          <i class="fa-solid fa-expand" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+    
+    <div class="reader-content" id="readerCascataContainer" role="region" aria-label="Páginas do mangá">
+      <!-- Imagens injetadas via JS -->
+    </div>
 
-      <div class="comments-section" style="flex-shrink:0;margin-top:10px;">
-        <h4 style="font-size:0.8rem;color:var(--rosa-claro);margin-bottom:6px;"><i class="fa-solid fa-comments" aria-hidden="true"></i> Comentários do Capítulo</h4>
-        <form onsubmit="adicionarComentario(event)" style="display:flex;gap:6px;margin-bottom:6px;">
-          <input type="text" id="inputComentario" placeholder="Escreva um comentário..." required maxlength="2000" style="flex:1;padding:6px 10px;background:var(--fundo);border:1px solid var(--borda);border-radius:6px;color:var(--texto);font-size:0.75rem;">
-          <button type="submit" class="btn-buy" style="width:auto;padding:6px 12px;font-size:0.75rem;">Enviar</button>
-        </form>
-        <div id="listaComentarios" style="max-height:90px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;" role="log" aria-live="polite"></div>
+    <div class="reader-footer">
+      <button class="btn-secondary" onclick="navegarCapitulo(-1)" id="btnCapituloAnterior">
+        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Anterior
+      </button>
+      
+      <select id="listaCapitulosContainer" class="chapter-select" aria-label="Selecionar capítulo">
+        <!-- Preenchido via JS -->
+      </select>
+
+      <button class="btn-secondary" onclick="navegarCapitulo(1)" id="btnProximoCapitulo">
+        Próximo <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: INFO / AVISOS -->
+  <div class="modal" id="infoModal" role="dialog" aria-modal="true" aria-labelledby="infoModalTitle">
+    <div class="modal-content modal-small">
+      <div class="modal-header">
+        <h3 id="infoModalTitle">Informação</h3>
+        <button class="close-btn" onclick="toggleModal('infoModal')" aria-label="Fechar modal">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="infoModalTexto"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary full-width" onclick="toggleModal('infoModal')">Entendi</button>
       </div>
     </div>
   </div>
 
-  <!-- Painel Admin -->
+  <!-- MODAL: PAINEL ADMIN (Básico para suportar o script) -->
   <div class="modal" id="adminModal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
-    <div class="modal-content" style="max-width:650px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-content modal-large">
       <div class="modal-header">
-        <h3 id="adminModalTitle"><i class="fa-solid fa-sliders" style="color:var(--primaria);" aria-hidden="true"></i> Painel Admin SolitudeScan</h3>
-        <i class="fa-solid fa-xmark close-btn" onclick="toggleModal('adminModal')" role="button" aria-label="Fechar modal" tabindex="0"></i>
+        <h3 id="adminModalTitle"><i class="fa-solid fa-shield-halved" style="color:var(--primaria);" aria-hidden="true"></i> Painel Administrativo</h3>
+        <button class="close-btn" onclick="toggleModal('adminModal')" aria-label="Fechar modal">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
       </div>
-
-      <div style="background:var(--fundo);border:1px solid var(--alerta);border-radius:12px;padding:12px;margin-bottom:15px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-          <h4 style="font-size:0.85rem;color:var(--alerta);"><i class="fa-solid fa-money-check-dollar" aria-hidden="true"></i> Solicitações de Pagamento VIP</h4>
-          <button onclick="carregarSolicitacoesPagamento()" class="btn-reader-action" title="Atualizar lista" aria-label="Atualizar solicitações"><i class="fa-solid fa-rotate" aria-hidden="true"></i></button>
-        </div>
-        <div id="adminPagamentosContainer" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;"></div>
-      </div>
-
-      <div style="background:var(--fundo);border:1px solid var(--primaria);border-radius:12px;padding:12px;margin-bottom:15px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-          <h4 style="font-size:0.85rem;color:var(--primaria);"><i class="fa-solid fa-book" aria-hidden="true"></i> Gerenciar Obras (VIP, Grátis e Exclusão)</h4>
-          <div style="display:flex;gap:6px;">
-            <button onclick="restaurarCatalogoPadrao()" class="btn-reader-action" title="Limpar ajustes locais (obras ocultas e VIP manual)">Limpar Ajustes Locais</button>
-            <button onclick="carregarGerenciamentoObras()" class="btn-reader-action" title="Atualizar lista" aria-label="Atualizar obras"><i class="fa-solid fa-rotate" aria-hidden="true"></i></button>
-          </div>
-        </div>
-        <div id="adminObrasContainer" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;"></div>
-      </div>
-
-      <form onsubmit="adicionarObra(event)">
+      <div class="modal-body">
         <div class="form-group">
-          <label for="admTitulo">Título da Obra</label>
-          <input type="text" id="admTitulo" required maxlength="200">
+          <label for="admPaginasArquivo">Upload de Páginas (Imagens ou PDF)</label>
+          <input type="file" id="admPaginasArquivo" accept="image/*,application/pdf" multiple>
+          <small class="form-text">Formatos aceitos: JPG, PNG, WebP, PDF. Tamanho máximo recomendado: 50MB por arquivo.</small>
         </div>
-        <div style="display:flex;gap:10px;">
-          <div class="form-group" style="flex:1;">
-            <label for="admGenero">Gênero Principal</label>
-            <select id="admGenero">
-              <option value="Shoujo">Shoujo</option>
-              <option value="Shounen">Shounen</option>
-              <option value="Seinen">Seinen</option>
-              <option value="Josei">Josei</option>
-              <option value="Romance">Romance</option>
-              <option value="Ação">Ação</option>
-              <option value="Fantasia">Fantasia</option>
-              <option value="Isekai">Isekai</option>
-              <option value="Drama">Drama</option>
-              <option value="Comédia">Comédia</option>
-              <option value="Terror">Terror</option>
-              <option value="Suspense">Suspense</option>
-              <option value="Mistério">Mistério</option>
-              <option value="Sobrenatural">Sobrenatural</option>
-              <option value="Slice of Life">Slice of Life</option>
-              <option value="Aventura">Aventura</option>
-              <option value="Sci-fi">Sci-fi</option>
-              <option value="Vida Escolar">Vida Escolar</option>
-              <option value="Webtoon">Webtoon</option>
-              <option value="Manhwa">Manhwa</option>
-            </select>
-          </div>
-          <div class="form-group" style="flex:1;">
-            <label for="admCapitulo">Capítulo Inicial</label>
-            <input type="text" id="admCapitulo" placeholder="Ex: Capítulo 01" required>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="admCapa">URL da Imagem de Capa</label>
-          <input type="text" id="admCapa" placeholder="https://exemplo.com/capa.jpg">
-        </div>
-        <div class="form-group">
-          <label for="admCapaArquivo">Ou envie um arquivo de capa</label>
-          <input type="file" id="admCapaArquivo" accept="image/*">
-        </div>
-        <div class="form-group">
-          <label for="admSinopse">Sinopse da Obra</label>
-          <textarea id="admSinopse" rows="4" placeholder="Escreva a sinopse da obra aqui..." maxlength="2000" style="width:100%;padding:10px;background:var(--fundo);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-size:0.85rem;resize:vertical;font-family:inherit;"></textarea>
-        </div>
-
-        <!-- ✅ CORREÇÃO: INPUT AGORA ACEITA PDF + CONTADOR DE ARQUIVOS -->
-        <div class="form-group">
-          <label>Upload das Páginas do Capítulo</label>
-          <div class="upload-dropzone upload-dropzone-pdf" onclick="document.getElementById('admPaginasArquivo').click()" role="button" tabindex="0" aria-label="Selecionar páginas ou PDF">
-            <i class="fa-solid fa-cloud-arrow-up" style="font-size:1.5rem;color:var(--primaria);margin-bottom:6px;" aria-hidden="true"></i>
-            <p style="font-size:0.75rem;color:var(--texto-claro);">Arraste imagens <strong>OU um PDF completo</strong> aqui</p>
-            <p id="admPaginasContagem" style="font-size:0.65rem;color:var(--primaria);margin-top:6px;"></p>
-            <input type="file" id="admPaginasArquivo" multiple accept="image/*,application/pdf" style="display:none;" onchange="document.getElementById('admPaginasContagem').textContent=this.files.length+' arquivo(s) selecionado(s)'">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="admVip">Exclusivo VIP?</label>
-          <select id="admVip">
-            <option value="false">Não (Público)</option>
-            <option value="true">Sim (Apenas VIP)</option>
-          </select>
-        </div>
-        <button type="submit" class="btn-buy">+ Cadastrar / Atualizar Obra</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal de Confirmação -->
-  <div class="modal" id="confirmModal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitulo" aria-describedby="confirmMsg">
-    <div class="modal-content" style="max-width:400px;text-align:center;">
-      <i class="fa-solid fa-triangle-exclamation" style="font-size:2rem;color:var(--alerta);margin-bottom:10px;" aria-hidden="true"></i>
-      <h3 id="confirmTitulo" style="margin-bottom:8px;font-size:1rem;">Confirmar ação</h3>
-      <p id="confirmMsg" style="font-size:0.8rem;color:var(--texto-claro);margin-bottom:18px;"></p>
-      <div style="display:flex;gap:8px;">
-        <button class="btn-buy" style="background:var(--fundo-card);border:1px solid var(--borda);color:var(--texto);" onclick="toggleModal('confirmModal')">Cancelar</button>
-        <button class="btn-buy" id="confirmBtnOk" style="background:linear-gradient(135deg,var(--erro),#b91c1c);">Confirmar</button>
+        <button class="btn-primary" onclick="processarUploadAdmin()">Processar Upload</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal de Informações -->
-  <div class="modal" id="infoModal" role="dialog" aria-modal="true" aria-labelledby="infoModalTitulo">
-    <div class="modal-content" style="max-width:520px;">
-      <div class="modal-header">
-        <h3 id="infoModalTitulo">Informações</h3>
-        <i class="fa-solid fa-xmark close-btn" onclick="toggleModal('infoModal')" role="button" aria-label="Fechar modal" tabindex="0"></i>
-      </div>
-      <div id="infoModalTexto" style="font-size:0.8rem;color:var(--texto-claro);line-height:1.6;"></div>
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="toast-container" aria-live="polite" role="status"></div>
+
+  <!-- COOKIE BANNER LGPD -->
+  <div id="cookieBanner" class="cookie-banner" role="dialog" aria-label="Aviso de cookies" style="display: none;">
+    <div class="cookie-content">
+      <p>Utilizamos cookies para melhorar sua experiência de leitura, personalizar conteúdo e analisar nosso tráfego. Ao continuar navegando, você concorda com nossa <a href="/privacidade">Política de Privacidade</a>.</p>
+      <button class="btn-primary small" onclick="aceitarCookies()">Aceitar e Fechar</button>
     </div>
   </div>
 
-  <!-- FOOTER -->
-  <footer class="site-footer" id="siteFooter">
-    <div class="footer-social">
-      <a href="https://discord.gg/fX3wUZBvk" target="_blank" rel="noopener noreferrer" aria-label="Discord Oficial da SolitudeScan"><i class="fa-brands fa-discord" aria-hidden="true"></i></a>
-      <a href="https://x.com/solitudescan" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter) da SolitudeScan"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></a>
-    </div>
-    <div class="footer-brand">
-      <h3>SolitudeScan</h3>
-      <p>A SolitudeScan é o seu destino para ler manhwas, mangás e manhuas com a melhor experiência: capítulos novos, leitura fluida e em alta definição, sem anúncios e sem travamentos.</p>
-    </div>
-    <div class="footer-cols">
-      <div>
-        <h4>Links Rápidos</h4>
-        <a onclick="switchTab('tab-home')" role="button" tabindex="0">Início</a>
-        <a onclick="switchTab('tab-vip')" role="button" tabindex="0">Planos VIP</a>
-        <a onclick="switchTab('tab-profile')" role="button" tabindex="0">Perfil</a>
-      </div>
-      <div>
-        <h4>Suporte</h4>
-        <a onclick="abrirInfoLegal('termos')" role="button" tabindex="0">Termos de Serviço</a>
-        <a onclick="abrirInfoLegal('privacidade')" role="button" tabindex="0">Política de Privacidade</a>
-        <a onclick="abrirInfoLegal('dmca')" role="button" tabindex="0">DMCA</a>
-      </div>
-    </div>
-    <div class="footer-copy">© 2026 SolitudeScan. Todos os direitos reservados.</div>
-  </footer>
+  <!-- BOTÃO INSTALAR APP (PWA) -->
+  <button id="btnInstalarApp" class="pwa-install-btn" style="display: none;" onclick="instalarApp()">
+    <i class="fa-solid fa-download" aria-hidden="true"></i> Instalar App
+  </button>
 
-  <!-- Navegação Mobile Inferior -->
-  <nav class="bottom-nav" role="navigation" aria-label="Navegação Mobile">
-    <a class="nav-item active" onclick="switchTab('tab-home',this)" role="button" aria-label="Página Inicial" tabindex="0"><i class="fa-solid fa-house" aria-hidden="true"></i></a>
-    <a class="nav-item" onclick="switchTab('tab-vip',this)" role="button" aria-label="Planos VIP" tabindex="0"><i class="fa-solid fa-crown" style="color:var(--primaria);" aria-hidden="true"></i></a>
-    <a class="nav-item" onclick="switchTab('tab-profile',this)" role="button" aria-label="Perfil do Usuário" tabindex="0"><i class="fa-solid fa-user" aria-hidden="true"></i></a>
-  </nav>
-
-  <!-- PDF.js — CARREGADO ANTES DO script.js (CORRIGIDO) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script>
-    if (window['pdfjsLib']) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    }
-  </script>
-
-  <!-- Proteção inline contra cópia + atalhos -->
-  <script>
-  (function(){
-    document.addEventListener('contextmenu', function(e){
-      if (e.target && e.target.closest && e.target.closest('#readerModal')) e.preventDefault();
-    });
-    document.addEventListener('keydown', function(e){
-      var reader = document.getElementById('readerModal');
-      if (!reader || !reader.classList.contains('active')) return;
-      if (e.key === 'F12') e.preventDefault();
-      if (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) e.preventDefault();
-      if (e.ctrlKey && ['s','u','p'].includes(e.key.toLowerCase())) e.preventDefault();
-    });
-    document.addEventListener('dragstart', function(e){
-      if (e.target && e.target.tagName === 'IMG' && e.target.closest && e.target.closest('#readerModal')) e.preventDefault();
-    });
-  })();
-  </script>
-
-  <!-- Script Principal (usa PDF.js e Supabase) -->
+  <!-- SCRIPTS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="script.js"></script>
+  
+  <!-- Proteção inline mínima contra cópia no leitor (complementar ao script.js) -->
+  <script>
+    (function(){
+      document.addEventListener('contextmenu', function(e){
+        if (e.target && e.target.closest && e.target.closest('#readerModal')) e.preventDefault();
+      });
+      document.addEventListener('keydown', function(e){
+        var reader = document.getElementById('readerModal');
+        if (!reader || !reader.classList.contains('active')) return;
+        if (e.key === 'F12') e.preventDefault();
+        if (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) e.preventDefault();
+        if (e.ctrlKey && ['s','u','p'].includes(e.key.toLowerCase())) e.preventDefault();
+      });
+      document.addEventListener('dragstart', function(e){
+        if (e.target && e.target.tagName === 'IMG' && e.target.closest && e.target.closest('#readerModal')) e.preventDefault();
+      });
+    })();
+  </script>
 </body>
 </html>
