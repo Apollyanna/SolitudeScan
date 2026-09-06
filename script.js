@@ -14,7 +14,7 @@
 const CONFIG = Object.freeze({
   SUPABASE_URL: "https://zvpehjzbwastofjytogn.supabase.co",
   SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2cGVoanpid2FzdG9manl0b2duIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1NDU0NjMsImV4cCI6MjEwMTEyMTQ2M30.KoB3qd86M5sVr_mcsixFAhBqv6rQxmW2LOWNs0_C1lg",
-  CHAVE_PIX: "pix@solitudescan.com",
+  CHAVE_PIX: "solitudescanoficial@gmail.com",
   TEMPO_PIX_SEGUNDOS: 270,
   DISCORD_URL: "https://discord.gg/fX3wUZBvk",
   PLANOS_DURACAO: Object.freeze({
@@ -971,7 +971,6 @@ async function carregarObras() {
     renderizarHeroBanner();
     renderizarTendencias();
     renderizarRanking();
-    renderizarConcluidas();
     popularFiltroGeneros();
 
   } catch (err) {
@@ -1370,23 +1369,6 @@ function renderizarRanking() {
   }).join('');
 }
 
-function renderizarConcluidas() {
-  const container = document.getElementById('concluidasContainer');
-  if (!container) return;
-
-  const concluidas = AppState.catalogo.obrasRemotas
-    .filter(o => o.status === 'Completo' && !o.adulto)
-    .sort((a, b) => (b.avaliacao || 0) - (a.avaliacao || 0))
-    .slice(0, 6);
-
-  if (concluidas.length === 0) {
-    container.innerHTML = '<div class="empty-state"><p>Nenhuma obra concluída disponível.</p></div>';
-    return;
-  }
-
-  container.innerHTML = concluidas.map(obra => criarCardObra(obra)).join('');
-}
-
 /* =========================================================================
    14. CONTINUE LENDO
    ========================================================================= */
@@ -1566,9 +1548,8 @@ async function carregarCapitulosObra(obraId) {
 
 function renderizarListaCapitulos() {
   const select = document.getElementById('listaCapitulosContainer');
-  const container = document.getElementById('capitulosListaDetalhes');
   
-  if (!select && !container) return;
+  if (!select) return;
 
   let capitulos = [...AppState.leitor.capitulosObraAtual];
   
@@ -1588,15 +1569,6 @@ function renderizarListaCapitulos() {
     };
   }
 
-  if (container) {
-    container.innerHTML = capitulos.map((cap, i) => `
-      <div class="capitulo-item ${cap.vipOnly ? 'vip-only' : ''}" onclick="abrirLeitor(${i})" tabindex="0">
-        <span class="capitulo-numero">${escaparHtml(cap.titulo)}</span>
-        <span class="capitulo-data">${dataRelativa(cap.criadoEm)}</span>
-        ${cap.vipOnly ? '<i class="fa-solid fa-crown vip-icon"></i>' : ''}
-      </div>
-    `).join('');
-  }
 }
 
 function enviarComentario(obraId) {
@@ -4656,21 +4628,6 @@ function garantirBotaoTeste() {
   btn.style.cssText = 'position:fixed; bottom:80px; right:20px; background:#10b981; color:#fff; border:none; padding:10px 16px; border-radius:8px; font-weight:700; font-size:0.75rem; z-index:99999; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3);';
   btn.onclick = rodarTestesSolitude;
   document.body.appendChild(btn);
-}
-
-/* =========================================================================
-   41. FUNÇÕES AUXILIARES FINAIS
-   ========================================================================= */
-
-function limparPlaceholdersMortos() {
-  try {
-    document.querySelectorAll('img').forEach(img => {
-      const src = img.src || '';
-      if (src.indexOf('via.placeholder.com') !== -1) {
-        img.src = PLACEHOLDERS.AVATAR_SVG;
-      }
-    });
-  } catch (e) {}
 }
 
 function fecharDropdowns(e) {
