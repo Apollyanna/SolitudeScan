@@ -523,8 +523,9 @@ async function carregarPerfilRemoto(userId) {
       // SEGURANÇA CRÍTICO: isAdmin vem 100% do banco de dados, não de e-mail hardcoded
       AppState.usuario.isAdmin = !!data.is_admin;
       AppState.usuario.isVip = !!data.is_vip;
-      if (data.full_name) AppState.usuario.nome = data.full_name;
-      if (data.phone) AppState.usuario.telefone = data.phone;
+      if (data.display_name || data.username) {
+        AppState.usuario.nome = data.display_name || data.username;
+      }
       if (data.avatar_url) AppState.usuario.foto = data.avatar_url;
     }
   } catch (e) {
@@ -821,8 +822,7 @@ async function salvarPerfil(e) {
     try {
       await AppState.supabase.from('profiles').upsert({
         id: AppState.usuario.id,
-        full_name: AppState.usuario.nome,
-        phone: AppState.usuario.telefone,
+        display_name: AppState.usuario.nome,
         avatar_url: AppState.usuario.foto
       });
     } catch (err) {}
@@ -1526,18 +1526,18 @@ async function carregarCapitulosObra(obraId) {
   try {
     const { data, error } = await AppState.supabase
       .from('chapters')
-      .select('id, number, title, created_at, is_vip_only')
+      .select('id, chapter_number, title, created_at')
       .eq('work_id', obraId)
-      .order('number', { ascending: true });
+      .order('chapter_number', { ascending: true });
 
     if (error) throw error;
 
     AppState.leitor.capitulosObraAtual = (data || []).map(cap => ({
       id: cap.id,
-      numero: cap.number,
-      titulo: cap.title || `Capítulo ${cap.number}`,
+      numero: cap.chapter_number,
+      titulo: cap.title || `Capítulo ${cap.chapter_number}`,
       criadoEm: cap.created_at,
-      vipOnly: !!cap.is_vip_only
+      vipOnly: false
     }));
 
     renderizarListaCapitulos();
@@ -2186,7 +2186,7 @@ async function carregarComentarios(obraId) {
       .from('comments')
       .select(`
         *,
-        profiles:user_id (id, full_name, avatar_url, is_admin)
+        profiles:user_id (id, display_name, avatar_url, is_admin)
       `)
       .eq('work_id', obraId)
       .eq('is_hidden', false)
@@ -2363,7 +2363,7 @@ function renderizarComentarios(obraId) {
 
 function renderizarComentarioThread(comentario, todosComentarios, obraId, nivel) {
   const autor = comentario.profiles || {};
-  const nomeAutor = escaparHtml(autor.full_name || 'Usuário');
+  const nomeAutor = escaparHtml(autor.display_name || 'Usuário');
   const avatar = autor.avatar_url || PLACEHOLDERS.AVATAR_SVG;
   const isAdmin = !!autor.is_admin;
   const ehDono = AppState.usuario.id === autor.id;
@@ -3457,9 +3457,9 @@ async function carregarCapitulosAdmin(obraId) {
     container.innerHTML = data.map(cap => `
       <div class="admin-item" data-id="${cap.id}">
         <div class="admin-item-info">
-          <h4>${escaparHtml(cap.title || 'Capítulo ' + cap.number)}</h4>
-          <p>Número: ${cap.number} • ${dataRelativa(cap.created_at)}</p>
-          <span class="admin-item-meta">${cap.is_vip_only ? '<i class="fa-solid fa-crown"></i> VIP' : 'Público'}</span>
+          <h4>${escaparHtml(cap.title || 'Capítulo ' + cap.chapter_number)}</h4>
+          <p>Número: ${cap.chapter_number} • ${dataRelativa(cap.created_at)}</p>
+          <span class="admin-item-meta">Público</span>
         </div>
         <div class="admin-item-actions">
           <button class="btn-icon" onclick="gerenciarPaginasCapitulo('${cap.id}', '${obraId}')" aria-label="Gerenciar páginas" title="Páginas">
@@ -3498,8 +3498,8 @@ function abrirFormularioCapitulo(obraId, capituloId = null) {
       .then(({ data }) => {
         if (data) {
           document.getElementById('admCapTitulo').value = data.title || '';
-          document.getElementById('admCapNumero').value = data.number || '';
-          document.getElementById('admCapVip').checked = !!data.is_vip_only;
+          document.getElementById('admCapNumero').value = data.chapter_number || '';
+          document.getElementById('admCapVip').checked = false;
         }
       });
   }
@@ -3514,8 +3514,7 @@ async function salvarCapituloAdmin(e) {
   const dados = {
     work_id: AppState.admin.obraAtualAdmin,
     title: document.getElementById('admCapTitulo').value.trim(),
-    number: parseFloat(document.getElementById('admCapNumero').value) || 1,
-    is_vip_only: document.getElementById('admCapVip').checked
+    chapter_number: parseFloat(document.getElementById('admCapNumero').value) || 1
   };
 
   if (!dados.title || dados.title.length < 2) {
@@ -3868,9 +3867,9 @@ async function carregarUsuariosAdmin() {
 
     container.innerHTML = AppState.modais.listaUsuarios.map(user => `
       <div class="admin-item" data-id="${user.id}">
-        <img src="${user.avatar_url || PLACEHOLDERS.AVATAR_SVG}" alt="${escaparHtml(user.full_name || 'Usuário')}" class="admin-user-avatar" onerror="this.src='${PLACEHOLDERS.AVATAR_SVG}'">
+        <img src="${user.avatar_url || PLACEHOLDERS.AVATAR_SVG}" alt="${escaparHtml(user.display_name || user.username || 'Usuário')}" class="admin-user-avatar" onerror="this.src='${PLACEHOLDERS.AVATAR_SVG}'">
         <div class="admin-item-info">
-          <h4>${escaparHtml(user.full_name || 'Sem nome')}</h4>
+          <h4>${escaparHtml(user.display_name || user.username || 'Sem nome')}</h4>
           <p>${escaparHtml(user.email || '')}</p>
           <span class="admin-item-meta">
             ${user.is_admin ? '<span class="badge-admin">Admin</span>' : ''}
@@ -4032,7 +4031,6 @@ async function aprovarPagamento(pagamentoId) {
           .update({ 
             status: 'aprovado',
             approved_at: new Date().toISOString(),
-            approved_by: AppState.usuario.id
           })
           .eq('id', pagamentoId);
 
@@ -4086,7 +4084,6 @@ async function rejeitarPagamento(pagamentoId) {
           .update({ 
             status: 'rejeitado',
             rejected_at: new Date().toISOString(),
-            rejected_by: AppState.usuario.id
           })
           .eq('id', pagamentoId);
 
@@ -4126,7 +4123,7 @@ async function carregarDenunciasAdmin() {
       .from('reports')
       .select(`
         *,
-        reporter:reporter_id (full_name, email)
+        reporter:reporter_id (display_name, email)
       `)
       .order('created_at', { ascending: false })
       .limit(100);
@@ -4144,7 +4141,7 @@ async function carregarDenunciasAdmin() {
         <div class="admin-item" data-id="${rep.id}">
           <div class="admin-item-info">
             <h4>Denúncia: ${escaparHtml(rep.target_type || 'desconhecido')}</h4>
-            <p>Reportado por: ${escaparHtml(reporter.full_name || reporter.email || 'Anônimo')}</p>
+            <p>Reportado por: ${escaparHtml(reporter.display_name || reporter.email || 'Anônimo')}</p>
             <span class="admin-item-meta">
               <span class="status-badge status-${rep.status}">${rep.status}</span>
               • ${dataRelativa(rep.created_at)}
