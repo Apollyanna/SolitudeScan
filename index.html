@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   
   <!-- SEGURANÇA: Content Security Policy Rigoroso -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data: blob:; img-src * data: blob:; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; script-src 'self' 'unsafe-inline' https://*.supabase.co https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data: blob:; img-src * data: blob:; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; script-src 'self' 'unsafe-inline' https://*.supabase.co https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';">
   
   <!-- SEO BÁSICO -->
   <title>SolitudeScan | Leia Manhwas, Mangás e Manhuás Online</title>
@@ -51,10 +51,10 @@
   <link rel="apple-touch-icon" href="icon.svg">
   <meta name="theme-color" content="#ec4899">
 
+</head>
+<body>
   <!-- ACESSIBILIDADE: Skip Link -->
   <a href="#mainContent" class="skip-link" id="skipLink">Pular para o conteúdo principal</a>
-</head>
-<body onload="(function(){var a=document.createElement('scr'+'ipt');a.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';a.onload=function(){document.body.dataset.sup='yes';var b=document.createElement('scr'+'ipt');b.src='script.js';b.onload=function(){document.body.dataset.app='yes';document.dispatchEvent(new Event('DOMContentLoaded'))};b.onerror=function(){document.body.dataset.app='error'};document.head.appendChild(b)};a.onerror=function(){document.body.dataset.sup='error'};document.head.appendChild(a)})()">
 
   <!-- NAVBAR -->
   <nav class="navbar" role="navigation" aria-label="Navegação Principal">
@@ -86,7 +86,7 @@
 
       <!-- View Logado -->
       <div id="loggedInView" class="user-profile-mini" style="display: none;">
-        <img id="userAvatarImg" src="" alt="Avatar do usuário" class="user-avatar-mini">
+        <img id="userAvatarImg" src="icon.svg" alt="Avatar do usuário" class="user-avatar-mini">
         <div class="user-info-mini">
           <span id="userNameDisplay" class="user-name">Leitor</span>
           <span id="userPlanBadge" class="plan-badge">Plano Gratuito</span>
@@ -222,7 +222,7 @@
     <div id="tab-profile" class="tab-content" role="tabpanel" aria-label="Perfil do usuário">
       <section class="profile-section">
         <div class="profile-header">
-          <img id="profileAvatarLarge" src="" alt="Avatar grande" class="profile-avatar-large">
+          <img id="profileAvatarLarge" src="icon.svg" alt="Avatar grande" class="profile-avatar-large">
           <div>
             <h2 id="profileNameLarge">Nome do Usuário</h2>
             <span id="profilePlanLarge" class="plan-badge">Plano Gratuito</span>
@@ -351,7 +351,7 @@
       </div>
       <form id="configForm" onsubmit="salvarPerfil(event)" class="modal-form">
         <div class="form-group text-center">
-          <img id="editFotoPreview" src="" alt="Preview do avatar" class="avatar-preview-large">
+          <img id="editFotoPreview" src="icon.svg" alt="Preview do avatar" class="avatar-preview-large">
           <label for="editFotoArquivo" class="btn-secondary small">Alterar Foto</label>
           <input type="file" id="editFotoArquivo" accept="image/*" style="display: none;" onchange="previewFotoPerfil(event)">
         </div>
@@ -564,6 +564,8 @@
   </button>
 
   <!-- SCRIPTS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js"></script>
 
 </body>
 </html>
