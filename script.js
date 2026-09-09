@@ -937,7 +937,7 @@ async function carregarObras() {
       .from('works')
       .select(`
         *,
-        genres:genres(name),
+        genres:work_genres(genres(name)),
         chapters(count)
       `)
       .order('updated_at', { ascending: false });
@@ -951,17 +951,17 @@ async function carregarObras() {
       autor: obra.author || 'Desconhecido',
       artista: obra.artist || obra.author || 'Desconhecido',
       status: obra.status || 'Em Lançamento',
-      generos: (obra.genres || []).map(g => g.name).filter(Boolean),
-      sinopse: obra.description || 'Sinopse não disponível.',
+      generos: (obra.genres || []).map(g => g.genres?.name || g.name).filter(Boolean),
+      sinopse: obra.synopsis || 'Sinopse não disponível.',
       tipo: obra.type || 'Manhwa',
       visualizacoes: obra.views || 0,
-      curtidas: obra.likes || 0,
-      avaliacao: obra.rating || 0,
+      curtidas: obra.likes_count || 0,
+      avaliacao: obra.rating_avg ?? obra.rating ?? 0,
       totalAvaliacoes: obra.rating_count || 0,
       totalCapitulos: obra.chapters?.[0]?.count || 0,
       atualizadoEm: obra.updated_at,
       criadoEm: obra.created_at,
-      exclusivo: !!obra.is_exclusive,
+      exclusivo: !!obra.is_vip,
       adulto: !!obra.is_adult,
       destaque: !!obra.is_featured
     }));
@@ -1973,8 +1973,8 @@ async function sincronizarFavoritosSupabase() {
 
   try {
     // Deletar favoritos antigos e inserir novos
-    await AppState.supabase
-      .from('user_favorites')
+      await AppState.supabase
+      .from('favorites')
       .delete()
       .eq('user_id', AppState.usuario.id);
 
@@ -1984,7 +1984,7 @@ async function sincronizarFavoritosSupabase() {
         work_id: workId
       }));
       
-      await AppState.supabase.from('user_favorites').insert(inserts);
+      await AppState.supabase.from('favorites').insert(inserts);
     }
   } catch (err) {
     console.error('[SolitudeScan] Erro ao sincronizar favoritos:', err);
@@ -2238,7 +2238,7 @@ async function adicionarComentario(obraId, texto, comentarioPaiId = null, isSpoi
       user_id: AppState.usuario.id,
       content: texto.trim(),
       parent_id: comentarioPaiId,
-      is_spoiler: isSpoiler
+      spoiler: isSpoiler
     });
 
     if (error) throw error;
@@ -2265,24 +2265,26 @@ async function curtirComentario(comentarioId, obraId) {
 
   try {
     const { data: existente } = await AppState.supabase
-      .from('comment_likes')
+      .from('likes')
       .select('id')
       .eq('user_id', AppState.usuario.id)
-      .eq('comment_id', comentarioId)
+      .eq('target_type', 'comment')
+      .eq('target_id', comentarioId)
       .single();
 
     if (existente) {
       await AppState.supabase
-        .from('comment_likes')
+        .from('likes')
         .delete()
         .eq('id', existente.id);
       mostrarToast('Curtida removida.', 'info', 2000);
     } else {
       await AppState.supabase
-        .from('comment_likes')
+        .from('likes')
         .insert({
           user_id: AppState.usuario.id,
-          comment_id: comentarioId
+          target_type: 'comment',
+          target_id: comentarioId
         });
       mostrarToast('Comentário curtido!', 'sucesso', 2000);
     }
@@ -2309,6 +2311,7 @@ async function denunciarComentario(comentarioId) {
       try {
         await AppState.supabase.from('reports').insert({
           reporter_id: AppState.usuario.id,
+          user_id: AppState.usuario.id,
           target_type: 'comment',
           target_id: comentarioId,
           status: 'pendente',
@@ -2370,7 +2373,7 @@ function renderizarComentarioThread(comentario, todosComentarios, obraId, nivel)
   const podeExcluir = ehDono || AppState.usuario.isAdmin;
   
   const respostas = todosComentarios.filter(c => c.parent_id === comentario.id);
-  const spoilerClass = comentario.is_spoiler ? 'spoiler-content' : '';
+  const spoilerClass = comentario.spoiler ? 'spoiler-content' : '';
   
   const adminBadge = isAdmin ? '<span class="admin-badge"><i class="fa-solid fa-shield"></i> Admin</span>' : '';
   
@@ -2383,7 +2386,7 @@ function renderizarComentarioThread(comentario, todosComentarios, obraId, nivel)
           ${adminBadge}
           <span class="comment-time">${dataRelativa(comentario.created_at)}</span>
         </div>
-        <p class="comment-text">${comentario.is_spoiler ? '<span class="spoiler-warning"><i class="fa-solid fa-eye-slash"></i> Spoiler</span>' : ''}${escaparHtml(comentario.content)}</p>
+        <p class="comment-text">${comentario.spoiler ? '<span class="spoiler-warning"><i class="fa-solid fa-eye-slash"></i> Spoiler</span>' : ''}${escaparHtml(comentario.content)}</p>
         <div class="comment-actions">
           ${nivel < 3 ? `<button class="btn-text" onclick="responderComentario('${comentario.id}')"><i class="fa-solid fa-reply"></i> Responder</button>` : ''}
           <button class="btn-text" onclick="denunciarComentario('${comentario.id}')"><i class="fa-solid fa-flag"></i> Denunciar</button>
@@ -2458,7 +2461,7 @@ async function carregarNotificacoes() {
 function atualizarBadgeNotificacoes() {
   const badge = document.getElementById('notifBadge');
   if (badge) {
-    const naoLidas = AppState.notificacoes.lista.filter(n => !n.read).length;
+    const naoLidas = AppState.notificacoes.lista.filter(n => !n.is_read).length;
     badge.textContent = naoLidas > 0 ? (naoLidas > 9 ? '9+' : naoLidas) : '';
     badge.style.display = naoLidas > 0 ? 'flex' : 'none';
   }
@@ -2494,7 +2497,7 @@ function renderizarListaNotificacoes() {
       'vip': 'fa-crown'
     };
     const icone = icones[notif.type] || 'fa-bell';
-    const lida = notif.read ? 'read' : '';
+    const lida = notif.is_read ? 'read' : '';
 
     return `
       <div class="notif-item ${lida}" data-id="${notif.id}" onclick="abrirNotificacao('${notif.id}')">
@@ -2514,12 +2517,12 @@ async function abrirNotificacao(notifId) {
   const notif = AppState.notificacoes.lista.find(n => n.id === notifId);
   if (!notif) return;
 
-  if (!notif.read) {
+    if (!notif.is_read) {
     await marcarNotificacaoComoLida(notifId);
   }
 
-  if (notif.action_url) {
-    window.location.href = notif.action_url;
+    if (notif.link) {
+      window.location.href = notif.link;
   } else if (notif.work_id) {
     abrirDetalhesObra(notif.work_id);
   }
@@ -2533,11 +2536,11 @@ async function marcarNotificacaoComoLida(notifId) {
   try {
     await AppState.supabase
       .from('notifications')
-      .update({ read: true })
+      .update({ is_read: true })
       .eq('id', notifId);
 
     const notif = AppState.notificacoes.lista.find(n => n.id === notifId);
-    if (notif) notif.read = true;
+    if (notif) notif.is_read = true;
     
     atualizarBadgeNotificacoes();
     renderizarListaNotificacoes();
@@ -2552,11 +2555,11 @@ async function marcarTodasNotificacoesComoLidas() {
   try {
     await AppState.supabase
       .from('notifications')
-      .update({ read: true })
+      .update({ is_read: true })
       .eq('user_id', AppState.usuario.id)
-      .eq('read', false);
+      .eq('is_read', false);
 
-    AppState.notificacoes.lista.forEach(n => n.read = true);
+    AppState.notificacoes.lista.forEach(n => n.is_read = true);
     atualizarBadgeNotificacoes();
     renderizarListaNotificacoes();
     mostrarToast('Todas as notificações marcadas como lidas.', 'sucesso');
@@ -2590,7 +2593,7 @@ async function avaliarObra(obraId, nota) {
     await AppState.supabase.from('ratings').upsert({
       user_id: AppState.usuario.id,
       work_id: obraId,
-      rating: nota
+      stars: nota
     }, {
       onConflict: 'user_id,work_id'
     });
@@ -2745,13 +2748,18 @@ async function carregarListasDoUsuario() {
   try {
     const { data, error } = await AppState.supabase
       .from('user_lists')
-      .select('*')
+      .select('*, user_list_items(work_id, position, status, added_at)')
       .eq('user_id', AppState.usuario.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    AppState.listas.personalizadas = data || [];
+    AppState.listas.personalizadas = (data || []).map(lista => ({
+      ...lista,
+      work_ids: (lista.user_list_items || [])
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+        .map(item => String(item.work_id))
+    }));
     localStorage.setItem('solitude_listas', JSON.stringify(AppState.listas.personalizadas));
   } catch (err) {
     console.error('[SolitudeScan] Erro ao carregar listas:', err);
@@ -2801,7 +2809,7 @@ function criarNovaLista() {
   }
 
   const novaLista = {
-    id: 'local_' + Date.now(),
+    id: null,
     name: nome.trim(),
     work_ids: [],
     created_at: new Date().toISOString(),
@@ -2820,12 +2828,33 @@ async function salvarListas() {
 
   if (AppState.supabase && AppState.usuario.logado) {
     try {
-      await AppState.supabase.from('user_lists').upsert(
-        AppState.listas.personalizadas.map(lista => ({
-          ...lista,
-          user_id: AppState.usuario.id
-        }))
-      );
+      for (const lista of AppState.listas.personalizadas) {
+        const payload = {
+          ...(ehUuid(lista.id) ? { id: lista.id } : {}),
+          user_id: AppState.usuario.id,
+          name: lista.name,
+          description: lista.description || null,
+          is_default: !!lista.is_default
+        };
+        const { data, error } = await AppState.supabase
+          .from('user_lists')
+          .upsert(payload)
+          .select('id')
+          .single();
+        if (error) throw error;
+        if (data?.id && !lista.id) lista.id = data.id;
+      }
+
+      for (const lista of AppState.listas.personalizadas) {
+        if (!ehUuid(lista.id)) continue;
+        await AppState.supabase.from('user_list_items').delete().eq('list_id', lista.id);
+        const workIds = [...new Set((lista.work_ids || []).filter(ehUuid))];
+        if (workIds.length > 0) {
+          await AppState.supabase.from('user_list_items').insert(
+            workIds.map((workId, position) => ({ list_id: lista.id, work_id: workId, position }))
+          );
+        }
+      }
     } catch (err) {
       console.error('[SolitudeScan] Erro ao salvar listas:', err);
     }
@@ -2850,8 +2879,11 @@ function excluirLista(listaId) {
     'Excluir Lista',
     'Tem certeza que deseja excluir esta lista? As obras não serão excluídas do catálogo.',
     async () => {
-      AppState.listas.personalizadas = AppState.listas.personalizadas.filter(l => l.id !== listaId);
-      salvarListas();
+       AppState.listas.personalizadas = AppState.listas.personalizadas.filter(l => l.id !== listaId);
+       if (AppState.supabase && AppState.usuario.logado && ehUuid(listaId)) {
+         await AppState.supabase.from('user_lists').delete().eq('id', listaId);
+       }
+       salvarListas();
       renderizarListas();
       mostrarToast('Lista excluída.', 'info');
     }
@@ -3274,7 +3306,7 @@ async function carregarObrasAdmin() {
         <div class="admin-item-info">
           <h4>${escaparHtml(obra.title)}</h4>
           <p>${escaparHtml(obra.author || 'Autor desconhecido')} • ${escaparHtml(obra.status || 'Em Lançamento')}</p>
-          <span class="admin-item-meta">${obra.views || 0} visualizações • ${obra.rating || 0}★</span>
+          <span class="admin-item-meta">${obra.views || 0} visualizações • ${obra.rating_avg || 0}★</span>
         </div>
         <div class="admin-item-actions">
           <button class="btn-icon" onclick="editarObraAdmin('${obra.id}')" aria-label="Editar obra" title="Editar">
@@ -3313,10 +3345,10 @@ function abrirFormularioObra(obraId = null) {
       document.getElementById('admObraTitulo').value = obra.title || '';
       document.getElementById('admObraAutor').value = obra.author || '';
       document.getElementById('admObraArtista').value = obra.artist || '';
-      document.getElementById('admObraSinopse').value = obra.description || '';
+      document.getElementById('admObraSinopse').value = obra.synopsis || '';
       document.getElementById('admObraStatus').value = obra.status || 'Em Lançamento';
       document.getElementById('admObraTipo').value = obra.type || 'Manhwa';
-      document.getElementById('admObraExclusivo').checked = !!obra.is_exclusive;
+      document.getElementById('admObraExclusivo').checked = !!obra.is_vip;
       document.getElementById('admObraAdulto').checked = !!obra.is_adult;
       document.getElementById('admObraDestaque').checked = !!obra.is_featured;
     }
@@ -3333,13 +3365,23 @@ async function salvarObraAdmin(e) {
     title: document.getElementById('admObraTitulo').value.trim(),
     author: document.getElementById('admObraAutor').value.trim(),
     artist: document.getElementById('admObraArtista').value.trim(),
-    description: document.getElementById('admObraSinopse').value.trim(),
+    synopsis: document.getElementById('admObraSinopse').value.trim(),
     status: document.getElementById('admObraStatus').value,
     type: document.getElementById('admObraTipo').value,
-    is_exclusive: document.getElementById('admObraExclusivo').checked,
+    is_vip: document.getElementById('admObraExclusivo').checked,
     is_adult: document.getElementById('admObraAdulto').checked,
     is_featured: document.getElementById('admObraDestaque').checked
   };
+
+  if (!AppState.admin.editandoObraId) {
+    dados.slug = dados.title
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') + '-' + Date.now();
+    dados.cover_url = PLACEHOLDERS.CAPA_PLACEHOLDER;
+  }
 
   if (!dados.title || dados.title.length < 2) {
     mostrarToast('Título obrigatório (mínimo 2 caracteres).', 'alerta');
@@ -3445,7 +3487,7 @@ async function carregarCapitulosAdmin(obraId) {
       .from('chapters')
       .select('*')
       .eq('work_id', obraId)
-      .order('number', { ascending: true });
+      .order('chapter_number', { ascending: true });
 
     if (error) throw error;
 
@@ -3514,7 +3556,9 @@ async function salvarCapituloAdmin(e) {
   const dados = {
     work_id: AppState.admin.obraAtualAdmin,
     title: document.getElementById('admCapTitulo').value.trim(),
-    chapter_number: parseFloat(document.getElementById('admCapNumero').value) || 1
+    chapter_number: parseFloat(document.getElementById('admCapNumero').value) || 1,
+    is_vip: !!document.getElementById('admCapVip')?.checked,
+    is_published: true
   };
 
   if (!dados.title || dados.title.length < 2) {
@@ -4055,7 +4099,7 @@ async function aprovarPagamento(pagamentoId) {
             user_id: pag.user_id,
             type: 'vip',
             message: 'Seu pagamento foi aprovado! VIP ' + pag.plano + ' ativado até ' + new Date(expiraEm).toLocaleDateString('pt-BR') + '.',
-            read: false
+            is_read: false
           });
         }
 
@@ -4092,7 +4136,7 @@ async function rejeitarPagamento(pagamentoId) {
             user_id: pag.user_id,
             type: 'sistema',
             message: 'Seu pagamento foi rejeitado. Entre em contato com o suporte para mais informações.',
-            read: false
+            is_read: false
           });
         }
 
@@ -4578,7 +4622,7 @@ async function rodarTestesSolitude() {
 
   // Teste 6: Segurança
   teste('CSP presente', !!document.querySelector('meta[http-equiv="Content-Security-Policy"]'));
-  teste('EMAIL_ADMIN não hardcoded', !String(executarLoginCustom).includes('apolianadealmeidarocha97'));
+  teste('Autorização admin não usa e-mail hardcoded', !/@[a-z0-9.-]+\.[a-z]{2,}/i.test(String(executarLoginCustom)));
   teste('isAdmin vem do Supabase', String(carregarPerfilRemoto).includes('data.is_admin'));
 
   // Teste 7: Acessibilidade
