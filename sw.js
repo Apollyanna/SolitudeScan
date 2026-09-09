@@ -17,6 +17,10 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  // Never intercept Supabase/API/auth traffic or third-party resources.
+  if (url.hostname === 'supabase.co' || url.hostname.endsWith('.supabase.co')) return;
+  if (url.origin !== self.location.origin) return;
   e.respondWith(
     fetch(e.request)
       .then(res => {
