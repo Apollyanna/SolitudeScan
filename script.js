@@ -173,6 +173,60 @@ function escaparHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+function sanitizarUrlImagem(url, fallback, paraHtml = true) {
+  const valor = String(url ?? '').trim();
+  if (!valor) return fallback;
+
+  try {
+    const parsed = new URL(valor, window.location.origin);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return paraHtml ? escaparHtml(parsed.href) : parsed.href;
+    }
+  } catch (e) {
+    // URLs inválidas usam o placeholder seguro.
+  }
+
+  return fallback;
+}
+
+function extrairPathStorage(referencia, bucket = 'chapters') {
+  const valor = String(referencia ?? '').trim();
+  if (!valor) return '';
+
+  const marcadores = [
+    `/storage/v1/object/public/${bucket}/`,
+    `/storage/v1/object/sign/${bucket}/`,
+    `/storage/v1/object/authenticated/${bucket}/`
+  ];
+
+  for (const marcador of marcadores) {
+    const indice = valor.indexOf(marcador);
+    if (indice !== -1) {
+      return decodeURIComponent(valor.slice(indice + marcador.length).split('?')[0]);
+    }
+  }
+
+  return valor.startsWith(`${bucket}/`) ? valor.slice(bucket.length + 1) : valor;
+}
+
+async function criarUrlAssinadaPagina(referencia) {
+  if (!AppState.supabase) return '';
+
+  const path = extrairPathStorage(referencia);
+  if (!path) return '';
+
+  const { data, error } = await AppState.supabase.storage
+    .from('chapters')
+    .createSignedUrl(path, 3600);
+
+  if (error || !data?.signedUrl) {
+    console.error('[SolitudeScan] Erro ao gerar URL assinada da página:', error);
+    return '';
+  }
+
+  return sanitizarUrlImagem(data.signedUrl, '');
+}
+
 function validarEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
 }
@@ -195,7 +249,16 @@ function formatarNumero(num) {
 }
 
 function formatarMoeda(valor) {
-  return 'R$ ' + Number(valor).toFixed(2).replace('.', ',');
+  if (typeof valor === 'string') {
+    const normalizado = valor
+      .replace(/[^\d,.-]/g, '')
+      .replace(/\./g, '')
+      .replace(',', '.');
+    valor = Number(normalizado);
+  }
+
+  const numero = Number(valor);
+  return 'R$ ' + (Number.isFinite(numero) ? numero : 0).toFixed(2).replace('.', ',');
 }
 
 function dataRelativa(iso) {
@@ -527,6 +590,10 @@ async function carregarPerfilRemoto(userId) {
         AppState.usuario.nome = data.display_name || data.username;
       }
       if (data.avatar_url) AppState.usuario.foto = data.avatar_url;
+      AppState.usuario.planoVip = data.vip_plan || null;
+      AppState.usuario.vipExpiraEm = data.vip_expires_at ? new Date(data.vip_expires_at) : null;
+      AppState.usuario.isVip = !!data.is_vip &&
+        (!AppState.usuario.vipExpiraEm || AppState.usuario.vipExpiraEm > new Date());
     }
   } catch (e) {
     // Em caso de erro, manter isAdmin como false (segurança por padrão)
@@ -544,151 +611,72 @@ function atualizarVisibilidadeAdmin() {
    ========================================================================= */
 
 async function verificarVipPorPagamentos(email) {
-  if (!AppState.supabase || !email) return;
-  try {
-    const { data } = await AppState.supabase
-      .from('payment_requests')
-      .select('id, plano, created_at')
-      .eq('email', email)
-      .eq('status', 'aprovado')
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (data && data.length > 0) {
-      const pag = data[0];
-      const dias = CONFIG.PLANOS_DURACAO[pag.plano] || 30;
-      const inicio = new Date(pag.created_at);
-      const expiracao = new Date(inicio.getTime() + dias * 24 * 60 * 60 * 1000);
-
-      if (new Date() < expiracao) {
-        // SEGURANÇA: O localStorage é apenas cache visual, a verdade está no Supabase
-        const vipData = {
-          ativo: true,
-          plano: pag.plano,
-          email: email,
-          inicio: inicio.toISOString(),
-          expiracao: expiracao.toISOString(),
-          dias: dias
-        };
-        localStorage.setItem('solitude_vip_ativo', JSON.stringify(vipData));
-      }
-    }
-  } catch (e) {}
+  // O pagamento só é uma solicitação. A concessão efetiva vem do perfil
+  // atualizado pelo administrador; nunca confiar em localStorage para acesso.
+  if (AppState.supabase && AppState.usuario.logado && AppState.usuario.id) {
+    await carregarPerfilRemoto(AppState.usuario.id);
+  }
   verificarVipAtivo();
 }
 
-function ativarVipAutomatico(plano, email) {
-  const dias = CONFIG.PLANOS_DURACAO[plano];
-  if (!dias) {
-    mostrarToast('Plano inválido. Contate o suporte.', 'erro');
-    return false;
-  }
-
-  const agora = new Date();
-  const vipAtualStr = localStorage.getItem('solitude_vip_ativo');
-  let baseData = agora;
-
-  if (vipAtualStr) {
-    try {
-      const vipAtual = JSON.parse(vipAtualStr);
-      const expAtual = new Date(vipAtual.expiracao);
-      if (expAtual > agora) baseData = expAtual;
-    } catch (e) {
-      baseData = agora;
-    }
-  }
-
-  const expiracao = new Date(baseData.getTime() + dias * 24 * 60 * 60 * 1000);
-
-  const vipData = {
-    ativo: true,
-    plano: plano,
-    email: email,
-    inicio: agora.toISOString(),
-    expiracao: expiracao.toISOString(),
-    dias: dias
-  };
-
-  localStorage.setItem('solitude_vip_ativo', JSON.stringify(vipData));
-
-  AppState.usuario.isVip = true;
-  AppState.usuario.planoVip = plano;
-  AppState.usuario.vipExpiraEm = expiracao;
-
-  if (AppState.supabase && AppState.usuario.logado) {
-    atualizarVipNoSupabase(email, expiracao, plano);
-  }
-
-  return true;
+function ativarVipAutomatico() {
+  // Mantido apenas para compatibilidade com chamadas antigas. A ativação
+  // acontece exclusivamente após a aprovação administrativa no banco.
+  console.warn('[SolitudeScan] Ativação VIP client-side bloqueada.');
+  return false;
 }
 
 async function atualizarVipNoSupabase(email, expiracao, plano) {
+  if (!AppState.supabase || !AppState.usuario.id) return;
+
   try {
-    await AppState.supabase.from('profiles').upsert({
-      email: email,
+    const { error } = await AppState.supabase.from('profiles').update({
       is_vip: true,
       vip_plan: plano,
       vip_expires_at: expiracao.toISOString()
-    });
-  } catch (e) {}
+    }).eq('id', AppState.usuario.id);
+
+    if (error) throw error;
+  } catch (e) {
+    console.error('[SolitudeScan] Erro ao atualizar VIP:', e);
+  }
 }
 
 function verificarVipAtivo() {
-  const vipDataStr = localStorage.getItem('solitude_vip_ativo');
-
-  if (!vipDataStr) {
+  if (!AppState.usuario.logado) {
+    localStorage.removeItem('solitude_vip_ativo');
     AppState.usuario.isVip = false;
     AppState.usuario.planoVip = null;
     AppState.usuario.vipExpiraEm = null;
     return;
   }
 
-  let vipData;
-  try {
-    vipData = JSON.parse(vipDataStr);
-  } catch (e) {
+  if (AppState.usuario.isAdmin) {
     localStorage.removeItem('solitude_vip_ativo');
-    AppState.usuario.isVip = false;
     return;
   }
 
-  const agora = new Date();
-  const expiracao = new Date(vipData.expiracao);
+  const expiracao = AppState.usuario.vipExpiraEm
+    ? new Date(AppState.usuario.vipExpiraEm)
+    : null;
 
-  if (agora >= expiracao) {
+  if (!AppState.usuario.isVip || (expiracao && Date.now() >= expiracao.getTime())) {
     localStorage.removeItem('solitude_vip_ativo');
-    const eraVip = AppState.usuario.isVip;
     AppState.usuario.isVip = false;
     AppState.usuario.planoVip = null;
     AppState.usuario.vipExpiraEm = null;
-
-    if (eraVip) {
-      mostrarToast('Seu VIP expirou! Renove para continuar lendo obras exclusivas.', 'alerta', 6000);
-    }
-    atualizarPerfilTela();
     return;
   }
 
-  AppState.usuario.isVip = true;
-  AppState.usuario.planoVip = vipData.plano;
-  AppState.usuario.vipExpiraEm = expiracao;
+  // Mantém apenas o estado validado pelo perfil remoto.
+  localStorage.removeItem('solitude_vip_ativo');
 }
 
 function calcularDiasRestantes() {
-  const vipDataStr = localStorage.getItem('solitude_vip_ativo');
-  if (!vipDataStr) return 0;
+  if (!AppState.usuario.isVip || !AppState.usuario.vipExpiraEm) return 0;
 
-  try {
-    const vipData = JSON.parse(vipDataStr);
-    const agora = new Date();
-    const expiracao = new Date(vipData.expiracao);
-    const diffMs = expiracao - agora;
-
-    if (diffMs <= 0) return 0;
-    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  } catch (e) {
-    return 0;
-  }
+  const diffMs = new Date(AppState.usuario.vipExpiraEm).getTime() - Date.now();
+  return diffMs > 0 ? Math.ceil(diffMs / (1000 * 60 * 60 * 24)) : 0;
 }
 
 /* =========================================================================
@@ -707,7 +695,7 @@ function atualizarPerfilTela() {
     const avatarImg = document.getElementById('userAvatarImg');
 
     if (nameDisp) nameDisp.textContent = AppState.usuario.nome;
-    if (avatarImg) avatarImg.src = AppState.usuario.foto || PLACEHOLDERS.AVATAR_SVG;
+    if (avatarImg) avatarImg.src = sanitizarUrlImagem(AppState.usuario.foto, PLACEHOLDERS.AVATAR_SVG, false);
 
     atualizarDisplayVip();
     garantirZonaPerigoPerfil();
@@ -718,8 +706,7 @@ function atualizarPerfilTela() {
 
       if (AppState.usuario.isVip) {
         const dias = calcularDiasRestantes();
-        const vipData = JSON.parse(localStorage.getItem('solitude_vip_ativo') || '{}');
-        const expiracao = new Date(vipData.expiracao);
+        const expiracao = new Date(AppState.usuario.vipExpiraEm);
 
         if (!vipInfoBox) {
           vipInfoBox = document.createElement('div');
@@ -838,7 +825,7 @@ async function abrirConfigPerfil() {
   document.getElementById('editEmail').value = AppState.usuario.email;
   document.getElementById('editTel').value = AppState.usuario.telefone;
   const prev = document.getElementById('editFotoPreview');
-  if (prev) prev.src = AppState.usuario.foto || PLACEHOLDERS.AVATAR_SVG;
+  if (prev) prev.src = sanitizarUrlImagem(AppState.usuario.foto, PLACEHOLDERS.AVATAR_SVG, false);
 
   if (AppState.listas.personalizadas.length === 0) {
     await carregarListasDoUsuario();
@@ -1083,7 +1070,7 @@ function criarCardObra(obra) {
   return `
     <article class="manga-card" data-id="${obra.id}" onclick="abrirDetalhesObra('${obra.id}')" role="listitem" tabindex="0">
       <div class="manga-cover">
-        <img src="${obra.capa}" alt="Capa de ${escaparHtml(obra.titulo)}" loading="lazy" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
+        <img src="${sanitizarUrlImagem(obra.capa, PLACEHOLDERS.CAPA_PLACEHOLDER)}" alt="Capa de ${escaparHtml(obra.titulo)}" loading="lazy" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
         ${exclusivo}
         ${adulto}
         <div class="manga-overlay">
@@ -1207,7 +1194,7 @@ function renderizarHeroBanner() {
 
   track.innerHTML = destaques.map((obra, i) => `
     <div class="hero-slide ${i === 0 ? 'active' : ''}" data-index="${i}">
-      <img src="${obra.capa}" alt="${escaparHtml(obra.titulo)}" class="hero-bg" loading="${i === 0 ? 'eager' : 'lazy'}">
+      <img src="${sanitizarUrlImagem(obra.capa, PLACEHOLDERS.CAPA_PLACEHOLDER)}" alt="${escaparHtml(obra.titulo)}" class="hero-bg" loading="${i === 0 ? 'eager' : 'lazy'}">
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <div class="hero-badges">
@@ -1355,7 +1342,7 @@ function renderizarRanking() {
     return `
       <div class="ranking-item" onclick="abrirDetalhesObra('${obra.id}')" tabindex="0" role="listitem">
         <span class="ranking-position">${medalha}</span>
-        <img src="${obra.capa}" alt="${escaparHtml(obra.titulo)}" class="ranking-cover" loading="lazy" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
+        <img src="${sanitizarUrlImagem(obra.capa, PLACEHOLDERS.CAPA_PLACEHOLDER)}" alt="${escaparHtml(obra.titulo)}" class="ranking-cover" loading="lazy" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
         <div class="ranking-info">
           <h4 class="ranking-title">${escaparHtml(obra.titulo)}</h4>
           <div class="ranking-meta">
@@ -1400,7 +1387,7 @@ function renderizarContinueLendo() {
   container.innerHTML = obrasHistorico.map(obra => `
     <article class="manga-card continue-reading" data-id="${obra.id}" onclick="continuarLeitura('${obra.id}')" tabindex="0" role="listitem">
       <div class="manga-cover">
-        <img src="${obra.capa}" alt="${escaparHtml(obra.titulo)}" loading="lazy" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
+        <img src="${sanitizarUrlImagem(obra.capa, PLACEHOLDERS.CAPA_PLACEHOLDER)}" alt="${escaparHtml(obra.titulo)}" loading="lazy" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
         <div class="continue-badge">
           <i class="fa-solid fa-bookmark"></i> Cap. ${obra.ultimoCapitulo}
         </div>
@@ -1457,7 +1444,7 @@ function abrirDetalhesObra(obraId) {
   body.innerHTML = `
     <div class="obra-detalhes">
       <div class="obra-capa-grande">
-        <img src="${obra.capa}" alt="${escaparHtml(obra.titulo)}" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
+        <img src="${sanitizarUrlImagem(obra.capa, PLACEHOLDERS.CAPA_PLACEHOLDER)}" alt="${escaparHtml(obra.titulo)}" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
       </div>
       <div class="obra-info">
         <h2>${escaparHtml(obra.titulo)}</h2>
@@ -1526,8 +1513,9 @@ async function carregarCapitulosObra(obraId) {
   try {
     const { data, error } = await AppState.supabase
       .from('chapters')
-      .select('id, chapter_number, title, created_at')
+      .select('id, chapter_number, title, created_at, is_vip')
       .eq('work_id', obraId)
+      .eq('is_published', true)
       .order('chapter_number', { ascending: true });
 
     if (error) throw error;
@@ -1537,7 +1525,7 @@ async function carregarCapitulosObra(obraId) {
       numero: cap.chapter_number,
       titulo: cap.title || `Capítulo ${cap.chapter_number}`,
       criadoEm: cap.created_at,
-      vipOnly: false
+      vipOnly: !!cap.is_vip
     }));
 
     renderizarListaCapitulos();
@@ -1657,13 +1645,23 @@ async function carregarPaginasCapitulo(capituloId) {
       return;
     }
 
-    let paginas = data;
+    const paginasComUrl = await Promise.all((data || []).map(async pagina => ({
+      ...pagina,
+      signed_url: await criarUrlAssinadaPagina(pagina.image_url)
+    })));
+
+    let paginas = paginasComUrl.filter(pagina => pagina.signed_url);
     if (AppState.leitor.ordemInvertida) {
       paginas = [...paginas].reverse();
     }
 
+    if (paginas.length === 0) {
+      container.innerHTML = '<div class="reader-error"><i class="fa-solid fa-triangle-exclamation"></i><p>Não foi possível autorizar as páginas deste capítulo.</p></div>';
+      return;
+    }
+
     container.innerHTML = paginas.map((pagina, i) => `
-      <img src="${pagina.image_url}" 
+      <img src="${pagina.signed_url}" 
            alt="Página ${pagina.page_number}" 
            class="reader-page" 
            loading="${i < 3 ? 'eager' : 'lazy'}" 
@@ -2047,7 +2045,7 @@ function carregarHistoricoUsuario() {
   container.innerHTML = obrasHistorico.map(obra => `
     <article class="manga-card" data-id="${obra.id}" onclick="continuarLeitura('${obra.id}')" tabindex="0" role="listitem">
       <div class="manga-cover">
-        <img src="${obra.capa}" alt="${escaparHtml(obra.titulo)}" loading="lazy" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
+        <img src="${sanitizarUrlImagem(obra.capa, PLACEHOLDERS.CAPA_PLACEHOLDER)}" alt="${escaparHtml(obra.titulo)}" loading="lazy" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
         <div class="continue-badge">
           <i class="fa-solid fa-bookmark"></i> Cap. ${obra.ultimoCapitulo}
         </div>
@@ -2309,14 +2307,15 @@ async function denunciarComentario(comentarioId) {
       if (!AppState.supabase) return;
       
       try {
-        await AppState.supabase.from('reports').insert({
+        const { error } = await AppState.supabase.from('reports').insert({
           reporter_id: AppState.usuario.id,
           user_id: AppState.usuario.id,
           target_type: 'comment',
           target_id: comentarioId,
-          status: 'pendente',
+          status: 'pending',
           created_at: new Date().toISOString()
         });
+        if (error) throw error;
         mostrarToast('Denúncia enviada. Nossa equipe irá analisar.', 'sucesso');
       } catch (err) {
         console.error('[SolitudeScan] Erro ao denunciar:', err);
@@ -2367,7 +2366,7 @@ function renderizarComentarios(obraId) {
 function renderizarComentarioThread(comentario, todosComentarios, obraId, nivel) {
   const autor = comentario.profiles || {};
   const nomeAutor = escaparHtml(autor.display_name || 'Usuário');
-  const avatar = autor.avatar_url || PLACEHOLDERS.AVATAR_SVG;
+  const avatar = sanitizarUrlImagem(autor.avatar_url, PLACEHOLDERS.AVATAR_SVG);
   const isAdmin = !!autor.is_admin;
   const ehDono = AppState.usuario.id === autor.id;
   const podeExcluir = ehDono || AppState.usuario.isAdmin;
@@ -2379,7 +2378,7 @@ function renderizarComentarioThread(comentario, todosComentarios, obraId, nivel)
   
   const html = `
     <div class="comment-item ${nivel > 0 ? 'comment-reply' : ''} ${spoilerClass}" data-id="${comentario.id}">
-      <img src="${avatar}" alt="Avatar" class="comment-avatar" onerror="this.src='${PLACEHOLDERS.AVATAR_SVG}'">
+        <img src="${avatar}" alt="Avatar" class="comment-avatar" onerror="this.src='${PLACEHOLDERS.AVATAR_SVG}'">
       <div class="comment-body">
         <div class="comment-header">
           <strong>${nomeAutor}</strong>
@@ -2493,8 +2492,12 @@ function renderizarListaNotificacoes() {
       'novo_capitulo': 'fa-book',
       'resposta_comentario': 'fa-reply',
       'curtida': 'fa-heart',
-      'sistema': 'fa-info-circle',
-      'vip': 'fa-crown'
+      'system': 'fa-info-circle',
+      'payment': 'fa-money-bill-wave',
+      'vip_expiring': 'fa-crown',
+      'new_chapter': 'fa-book',
+      'reply': 'fa-reply',
+      'mention': 'fa-at'
     };
     const icone = icones[notif.type] || 'fa-bell';
     const lida = notif.is_read ? 'read' : '';
@@ -3219,7 +3222,7 @@ async function carregarDadosAdmin() {
       AppState.supabase.from('works').select('id', { count: 'exact', head: true }),
       AppState.supabase.from('profiles').select('id', { count: 'exact', head: true }),
       AppState.supabase.from('payment_requests').select('id', { count: 'exact', head: true }).eq('status', 'pendente'),
-      AppState.supabase.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pendente')
+      AppState.supabase.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending')
     ]);
 
     atualizarEstatisticasAdmin({
@@ -3302,7 +3305,7 @@ async function carregarObrasAdmin() {
 
     container.innerHTML = AppState.modais.listaObras.map(obra => `
       <div class="admin-item" data-id="${obra.id}">
-        <img src="${obra.cover_url || PLACEHOLDERS.CAPA_PLACEHOLDER}" alt="${escaparHtml(obra.title)}" class="admin-item-cover" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
+        <img src="${sanitizarUrlImagem(obra.cover_url, PLACEHOLDERS.CAPA_PLACEHOLDER)}" alt="${escaparHtml(obra.title)}" class="admin-item-cover" onerror="this.src='${PLACEHOLDERS.CAPA_PLACEHOLDER}'">
         <div class="admin-item-info">
           <h4>${escaparHtml(obra.title)}</h4>
           <p>${escaparHtml(obra.author || 'Autor desconhecido')} • ${escaparHtml(obra.status || 'Em Lançamento')}</p>
@@ -3648,9 +3651,14 @@ async function carregarPaginasAdmin(capituloId) {
       return;
     }
 
-    container.innerHTML = data.map(pag => `
+    const paginasComUrl = await Promise.all(data.map(async pag => ({
+      ...pag,
+      signed_url: await criarUrlAssinadaPagina(pag.image_url)
+    })));
+
+    container.innerHTML = paginasComUrl.map(pag => `
       <div class="admin-page-item" data-id="${pag.id}">
-        <img src="${pag.image_url}" alt="Página ${pag.page_number}" loading="lazy" onerror="this.src='${PLACEHOLDERS.PAGINA_PLACEHOLDER}'">
+        <img src="${pag.signed_url || PLACEHOLDERS.PAGINA_PLACEHOLDER}" alt="Página ${pag.page_number}" loading="lazy" onerror="this.src='${PLACEHOLDERS.PAGINA_PLACEHOLDER}'">
         <span class="page-number">#${pag.page_number}</span>
         <button class="btn-icon danger" onclick="excluirPaginaAdmin('${pag.id}', '${capituloId}')" aria-label="Excluir página">
           <i class="fa-solid fa-trash"></i>
@@ -3826,26 +3834,24 @@ async function uploadPaginasSupabase(arquivos, capituloId) {
   
   for (const file of arquivos) {
     try {
-      const path = 'chapters/' + capituloId + '/' + String(paginaAtual).padStart(3, '0') + '_' + Date.now() + '_' + file.name;
+      const nomeSeguro = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120);
+      const path = 'chapters/' + capituloId + '/' + String(paginaAtual).padStart(3, '0') + '_' + Date.now() + '_' + nomeSeguro;
       const { error } = await AppState.supabase.storage
         .from('chapters')
         .upload(path, file, { upsert: true });
 
       if (error) throw error;
 
-      const { data } = AppState.supabase.storage
-        .from('chapters')
-        .getPublicUrl(path);
-
-      if (data && data.publicUrl) {
+      if (path) {
         // Registrar no banco
-        await AppState.supabase.from('pages').insert({
+        const { error: pageError } = await AppState.supabase.from('pages').insert({
           chapter_id: capituloId,
-          image_url: data.publicUrl,
+          image_url: path,
           page_number: paginaAtual
         });
+        if (pageError) throw pageError;
         
-        urls.push(data.publicUrl);
+        urls.push(path);
         paginaAtual++;
       }
     } catch (err) {
@@ -3911,7 +3917,7 @@ async function carregarUsuariosAdmin() {
 
     container.innerHTML = AppState.modais.listaUsuarios.map(user => `
       <div class="admin-item" data-id="${user.id}">
-        <img src="${user.avatar_url || PLACEHOLDERS.AVATAR_SVG}" alt="${escaparHtml(user.display_name || user.username || 'Usuário')}" class="admin-user-avatar" onerror="this.src='${PLACEHOLDERS.AVATAR_SVG}'">
+        <img src="${sanitizarUrlImagem(user.avatar_url, PLACEHOLDERS.AVATAR_SVG)}" alt="${escaparHtml(user.display_name || user.username || 'Usuário')}" class="admin-user-avatar" onerror="this.src='${PLACEHOLDERS.AVATAR_SVG}'">
         <div class="admin-item-info">
           <h4>${escaparHtml(user.display_name || user.username || 'Sem nome')}</h4>
           <p>${escaparHtml(user.email || '')}</p>
@@ -4084,20 +4090,25 @@ async function aprovarPagamento(pagamentoId) {
         const dias = CONFIG.PLANOS_DURACAO[pag.plano] || 30;
         const expiraEm = new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString();
 
-        await AppState.supabase
+        const profileUpdate = AppState.supabase
           .from('profiles')
           .update({
             is_vip: true,
             vip_plan: pag.plano,
             vip_expires_at: expiraEm
-          })
-          .eq('email', pag.email);
+          });
+        const { error: profileError } = pag.user_id
+          ? await profileUpdate.eq('id', pag.user_id)
+          : await profileUpdate.eq('email', pag.email);
+
+        if (profileError) throw profileError;
 
         // Enviar notificação ao usuário (se existir)
         if (pag.user_id) {
           await AppState.supabase.from('notifications').insert({
             user_id: pag.user_id,
-            type: 'vip',
+            type: 'payment',
+            title: 'Pagamento aprovado',
             message: 'Seu pagamento foi aprovado! VIP ' + pag.plano + ' ativado até ' + new Date(expiraEm).toLocaleDateString('pt-BR') + '.',
             is_read: false
           });
@@ -4123,18 +4134,20 @@ async function rejeitarPagamento(pagamentoId) {
       try {
         const pag = AppState.modais.listaPagamentos.find(p => p.id === pagamentoId);
         
-        await AppState.supabase
+        const { error: paymentError } = await AppState.supabase
           .from('payment_requests')
           .update({ 
             status: 'rejeitado',
             rejected_at: new Date().toISOString(),
           })
           .eq('id', pagamentoId);
+        if (paymentError) throw paymentError;
 
         if (pag && pag.user_id) {
           await AppState.supabase.from('notifications').insert({
             user_id: pag.user_id,
-            type: 'sistema',
+            type: 'payment',
+            title: 'Pagamento rejeitado',
             message: 'Seu pagamento foi rejeitado. Entre em contato com o suporte para mais informações.',
             is_read: false
           });
@@ -4195,10 +4208,10 @@ async function carregarDenunciasAdmin() {
             <button class="btn-icon" onclick="verDenuncia('${rep.id}')" aria-label="Ver denúncia" title="Ver">
               <i class="fa-solid fa-eye"></i>
             </button>
-            <button class="btn-icon success" onclick="resolverDenuncia('${rep.id}', 'resolvido')" aria-label="Resolver" title="Resolver">
+            <button class="btn-icon success" onclick="resolverDenuncia('${rep.id}', 'resolved')" aria-label="Resolver" title="Resolver">
               <i class="fa-solid fa-check"></i>
             </button>
-            <button class="btn-icon danger" onclick="resolverDenuncia('${rep.id}', 'descartado')" aria-label="Descartar" title="Descartar">
+            <button class="btn-icon danger" onclick="resolverDenuncia('${rep.id}', 'dismissed')" aria-label="Descartar" title="Descartar">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
@@ -4230,7 +4243,7 @@ async function resolverDenuncia(denunciaId, status) {
       .eq('id', denunciaId);
 
     if (error) throw error;
-    mostrarToast('Denúncia ' + (status === 'resolvido' ? 'resolvida' : 'descartada') + '.', 'sucesso');
+    mostrarToast('Denúncia ' + (status === 'resolved' ? 'resolvida' : 'descartada') + '.', 'sucesso');
     carregarDenunciasAdmin();
   } catch (err) {
     console.error('[SolitudeScan] Erro ao resolver denúncia:', err);
