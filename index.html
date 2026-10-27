@@ -1,571 +1,409 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  
-  <!-- SEGURANÇA: Content Security Policy Rigoroso -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data: blob:; img-src * data: blob:; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; script-src 'self' 'unsafe-inline' https://*.supabase.co https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';">
-  
-  <!-- SEO BÁSICO -->
-  <title>SolitudeScan | Leia Manhwas, Mangás e Manhuás Online</title>
-  <meta name="description" content="Leia manhwas, mangás e manhuás online com experiência de leitura profissional, rápida e segura. Atualizações diárias e catálogo exclusivo.">
-  <meta name="keywords" content="mangá, manhwa, manhua, leitura online, scan, solitude scan, quadrinhos coreanos, quadrinhos japoneses">
-  <meta name="author" content="SolitudeScan">
-  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-  <link rel="canonical" href="https://solitudescan.com/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#ec4899">
 
-  <!-- OPEN GRAPH / FACEBOOK -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://solitudescan.com/">
-  <meta property="og:title" content="SolitudeScan | Leia Manhwas, Mangás e Manhuás Online">
-  <meta property="og:description" content="Experiência de leitura profissional, rápida e segura. Atualizações diárias e catálogo exclusivo.">
-  <meta property="og:image" content="https://solitudescan.com/icon.png">
-  <meta property="og:locale" content="pt_BR">
+<!-- CSP: frame-ancestors NÃO funciona em <meta>; configure no header HTTP do servidor/hospedagem -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src * data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self';">
 
-  <!-- TWITTER CARDS -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://solitudescan.com/">
-  <meta name="twitter:title" content="SolitudeScan | Leia Manhwas, Mangás e Manhuás Online">
-  <meta name="twitter:description" content="Experiência de leitura profissional, rápida e segura.">
-  <meta name="twitter:image" content="https://solitudescan.com/icon.png">
+<title>SolitudeScan | Leia Manhwas, Mangás e Manhuás Online</title>
+<meta name="description" content="Leia manhwas, mangás e manhuás online com experiência de leitura profissional, rápida e segura. Atualizações diárias e catálogo exclusivo.">
+<meta name="keywords" content="mangá, manhwa, manhua, leitura online, scan, solitude scan, quadrinhos coreanos, quadrinhos japoneses">
+<meta name="author" content="SolitudeScan">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<link rel="canonical" href="https://solitudescan.com/">
 
-  <!-- PERFORMANCE: Preconnect e Preload -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="preconnect" href="https://zvpehjzbwastofjytogn.supabase.co">
-  
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Great+Vibes&display=swap">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Great+Vibes&display=swap" media="print" onload="this.media='all'">
-  
-  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SolitudeScan">
+<meta property="og:url" content="https://solitudescan.com/">
+<meta property="og:title" content="SolitudeScan | Leia Manhwas, Mangás e Manhuás Online">
+<meta property="og:description" content="Experiência de leitura profissional, rápida e segura. Atualizações diárias e catálogo exclusivo.">
+<meta property="og:image" content="https://solitudescan.com/icon.png">
+<meta property="og:locale" content="pt_BR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SolitudeScan | Leia Manhwas, Mangás e Manhuás Online">
+<meta name="twitter:description" content="Experiência de leitura profissional, rápida e segura.">
+<meta name="twitter:image" content="https://solitudescan.com/icon.png">
 
-  <!-- ESTILOS E MANIFEST -->
-  <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="apple-touch-icon" href="icon.svg">
-  <meta name="theme-color" content="#ec4899">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"SolitudeScan","url":"https://solitudescan.com/","inLanguage":"pt-BR","potentialAction":{"@type":"SearchAction","target":"https://solitudescan.com/?q={search_term_string}","query-input":"required name=search_term_string"}}
+</script>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://zvpehjzbwastofjytogn.supabase.co">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Great+Vibes&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+<noscript>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Great+Vibes&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</noscript>
+
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
 </head>
 <body>
-  <!-- ACESSIBILIDADE: Skip Link -->
-  <a href="#mainContent" class="skip-link" id="skipLink">Pular para o conteúdo principal</a>
+<a href="#mainContent" class="skip-link" id="skipLink">Pular para o conteúdo principal</a>
+<noscript><p style="padding:16px;text-align:center">Ative o JavaScript para usar o SolitudeScan.</p></noscript>
 
-  <!-- NAVBAR -->
-  <nav class="navbar" role="navigation" aria-label="Navegação Principal">
-    <div class="navbar-brand">
-      <a href="/" aria-label="SolitudeScan - Página Inicial">
-        <span class="logo-text">Solitude<span class="highlight">Scan</span></span>
-      </a>
+<nav class="navbar" aria-label="Navegação principal">
+  <div class="navbar-brand">
+    <a href="/" aria-label="SolitudeScan - Página inicial"><span class="logo-text">Solitude<span class="highlight">Scan</span></span></a>
+  </div>
+  <div class="navbar-actions">
+    <button type="button" id="btnAdminNav" class="nav-btn" style="display:none;" aria-label="Painel administrativo">
+      <i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span>Admin</span>
+    </button>
+    <button type="button" class="nav-btn theme-toggle" id="themeToggleBtn" aria-label="Alternar tema claro/escuro">
+      <i class="fa-solid fa-moon" id="iconeTemaBotao" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="nav-btn" onclick="abrirConfigPerfil()" aria-label="Abrir perfil do usuário">
+      <i class="fa-solid fa-user" aria-hidden="true"></i>
+    </button>
+
+    <div id="loggedOutView" class="auth-buttons">
+      <button type="button" class="btn-primary" onclick="fazerLogin()">Entrar</button>
+      <button type="button" class="btn-secondary" onclick="abrirCadastro()">Cadastrar</button>
     </div>
-    
-    <div class="navbar-actions">
-      <button id="btnAdminNav" class="nav-btn" style="display: none;" aria-label="Painel Administrativo">
-        <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
-        <span>Admin</span>
+
+    <div id="loggedInView" class="user-profile-mini" style="display:none;">
+      <img id="userAvatarImg" src="icon.svg" alt="Avatar do usuário" class="user-avatar-mini" width="36" height="36" decoding="async">
+      <div class="user-info-mini">
+        <span id="userNameDisplay" class="user-name">Leitor</span>
+        <span id="userPlanBadge" class="plan-badge">Plano Gratuito</span>
+      </div>
+      <button type="button" class="btn-icon" onclick="fazerLogout()" aria-label="Sair da conta" title="Sair">
+        <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
       </button>
-
-      <button class="nav-btn theme-toggle" id="themeToggleBtn" aria-label="Alternar tema claro/escuro">
-        <i class="fa-solid fa-moon" id="iconeTemaBotao" aria-hidden="true"></i>
-      </button>
-
-      <button class="nav-btn" onclick="abrirConfigPerfil()" aria-label="Abrir perfil do usuário">
-        <i class="fa-solid fa-user" aria-hidden="true"></i>
-      </button>
-
-      <!-- View Deslogado -->
-      <div id="loggedOutView" class="auth-buttons">
-        <button class="btn-primary" onclick="fazerLogin()">Entrar</button>
-        <button class="btn-secondary" onclick="abrirCadastro()">Cadastrar</button>
-      </div>
-
-      <!-- View Logado -->
-      <div id="loggedInView" class="user-profile-mini" style="display: none;">
-        <img id="userAvatarImg" src="icon.svg" alt="Avatar do usuário" class="user-avatar-mini">
-        <div class="user-info-mini">
-          <span id="userNameDisplay" class="user-name">Leitor</span>
-          <span id="userPlanBadge" class="plan-badge">Plano Gratuito</span>
-        </div>
-        <button class="btn-icon" onclick="fazerLogout()" aria-label="Sair da conta" title="Sair">
-          <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
-        </button>
-      </div>
-    </div>
-  </nav>
-
-  <!-- CONTEÚDO PRINCIPAL -->
-  <main class="container" id="mainContent" role="main">
-    
-    <!-- TAB: HOME -->
-    <div id="tab-home" class="tab-content active" role="tabpanel" aria-label="Página inicial">
-      
-      <!-- HERO BANNER -->
-      <section id="heroBannerSection" class="hero-section" aria-label="Destaques">
-        <div class="hero-slider" role="region" aria-roledescription="carrossel" aria-label="Obras em destaque">
-          <div class="hero-track" id="heroTrack">
-            <!-- Preenchido via JS -->
-          </div>
-        </div>
-      </section>
-
-      <!-- BUSCA -->
-      <section class="search-section" aria-label="Busca de obras">
-        <div class="search-wrapper">
-          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-          <input type="search" id="searchInput" class="search-input" placeholder="Buscar mangá, manhwa ou autor..." aria-label="Campo de busca de obras">
-        </div>
-      </section>
-
-      <!-- FILTROS E ORDENAÇÃO -->
-      <section class="filters-section" aria-label="Filtros de catálogo">
-        <select id="generoFiltro" class="filter-select" aria-label="Filtrar por gênero">
-          <option value="Todos">Todos os Gêneros</option>
-          <!-- Preenchido via JS -->
-        </select>
-        <select id="statusFiltro" class="filter-select" aria-label="Filtrar por status">
-          <option value="Todos">Todos os Status</option>
-          <option value="Em Lançamento">Em Lançamento</option>
-          <option value="Completo">Completo</option>
-          <option value="Hiato">Hiato</option>
-        </select>
-        <select id="ordemFiltro" class="filter-select" aria-label="Ordenar por">
-          <option value="recentes">Mais Recentes</option>
-          <option value="populares">Mais Populares</option>
-          <option value="avaliados">Melhor Avaliados</option>
-        </select>
-      </section>
-
-      <!-- CATÁLOGO PRINCIPAL -->
-      <section aria-label="Últimas atualizações">
-        <h2 class="section-title">Últimas Atualizações</h2>
-        <div id="mangaContainer" class="manga-grid" role="list" aria-live="polite">
-          <!-- Preenchido via JS -->
-        </div>
-      </section>
-
-      <!-- TENDÊNCIAS -->
-      <section aria-label="Tendências da semana">
-        <h2 class="section-title">Tendências da Semana</h2>
-        <div id="tendenciasContainer" class="manga-grid" role="list" aria-live="polite">
-          <!-- Preenchido via JS -->
-        </div>
-      </section>
-
-      <!-- CONTINUE LENDO -->
-      <section id="continueLendoSection" aria-label="Continue lendo" style="display: none;">
-        <h2 class="section-title">Continue Lendo</h2>
-        <div id="continueLendoContainer" class="manga-grid" role="list" aria-live="polite">
-          <!-- Preenchido via JS -->
-        </div>
-      </section>
-
-      <!-- RANKING -->
-      <section aria-label="Ranking de obras">
-        <h2 class="section-title">Ranking</h2>
-        <div id="rankingContainer" class="ranking-list" role="list" aria-live="polite">
-          <!-- Preenchido via JS -->
-        </div>
-      </section>
-
-    </div>
-
-    <!-- TAB: VIP -->
-    <div id="tab-vip" class="tab-content" role="tabpanel" aria-label="Planos VIP">
-      <section class="vip-section">
-        <h2 class="section-title">Torne-se VIP</h2>
-        <p class="vip-description">Apoie o SolitudeScan e tenha acesso a capítulos antecipados, sem anúncios e com qualidade máxima.</p>
-        
-        <div class="vip-plans-grid">
-          <div class="vip-card">
-            <h3>VIP Mensal</h3>
-            <p class="price">R$ 14,90<span>/mês</span></p>
-            <ul class="vip-benefits">
-              <li><i class="fa-solid fa-check"></i> Capítulos antecipados</li>
-              <li><i class="fa-solid fa-check"></i> Leitura sem anúncios</li>
-              <li><i class="fa-solid fa-check"></i> Suporte prioritário</li>
-            </ul>
-            <button class="btn-primary full-width" onclick="abrirModalPix('VIP Mensal', 'R$ 14,90')">Assinar Agora</button>
-          </div>
-          
-          <div class="vip-card featured">
-            <div class="vip-badge">Mais Popular</div>
-            <h3>VIP Trimestral</h3>
-            <p class="price">R$ 39,90<span>/3 meses</span></p>
-            <ul class="vip-benefits">
-              <li><i class="fa-solid fa-check"></i> Todos os benefícios Mensais</li>
-              <li><i class="fa-solid fa-check"></i> Economia de 11%</li>
-              <li><i class="fa-solid fa-check"></i> Badge exclusiva no perfil</li>
-            </ul>
-            <button class="btn-primary full-width" onclick="abrirModalPix('VIP Trimestral', 'R$ 39,90')">Assinar Agora</button>
-          </div>
-
-          <div class="vip-card">
-            <h3>VIP Anual</h3>
-            <p class="price">R$ 149,90<span>/ano</span></p>
-            <ul class="vip-benefits">
-              <li><i class="fa-solid fa-check"></i> Todos os benefícios Trimestrais</li>
-              <li><i class="fa-solid fa-check"></i> Economia de 16%</li>
-              <li><i class="fa-solid fa-check"></i> Acesso a conteúdos exclusivos</li>
-            </ul>
-            <button class="btn-primary full-width" onclick="abrirModalPix('VIP Anual', 'R$ 149,90')">Assinar Agora</button>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <!-- TAB: PERFIL -->
-    <div id="tab-profile" class="tab-content" role="tabpanel" aria-label="Perfil do usuário">
-      <section class="profile-section">
-        <div class="profile-header">
-          <img id="profileAvatarLarge" src="icon.svg" alt="Avatar grande" class="profile-avatar-large">
-          <div>
-            <h2 id="profileNameLarge">Nome do Usuário</h2>
-            <span id="profilePlanLarge" class="plan-badge">Plano Gratuito</span>
-          </div>
-        </div>
-
-        <div class="profile-actions">
-          <button class="btn-secondary" onclick="abrirConfigPerfil()">
-            <i class="fa-solid fa-gear" aria-hidden="true"></i> Editar Perfil
-          </button>
-          <button class="btn-secondary" onclick="exportarDadosUsuario()">
-            <i class="fa-solid fa-download" aria-hidden="true"></i> Exportar Meus Dados
-          </button>
-        </div>
-
-        <div class="profile-tabs">
-          <button class="tab-btn active" onclick="switchTabProfile('historico', this)">Histórico</button>
-          <button class="tab-btn" onclick="switchTabProfile('favoritos', this)">Favoritos</button>
-          <button class="tab-btn" onclick="switchTabProfile('listas', this)">Minhas Listas</button>
-        </div>
-
-        <div id="profileHistorico" class="profile-tab-content active">
-          <div id="historicoContainer" class="manga-grid" role="list"></div>
-        </div>
-        <div id="profileFavoritos" class="profile-tab-content">
-          <div id="favoritosContainer" class="manga-grid" role="list"></div>
-        </div>
-        <div id="profileListas" class="profile-tab-content">
-          <div id="listasContainer" class="listas-grid" role="list"></div>
-        </div>
-      </section>
-    </div>
-
-  </main>
-
-  <!-- FOOTER -->
-  <footer id="siteFooter" class="site-footer" role="contentinfo">
-    <div class="footer-content">
-      <div class="footer-brand">
-        <span class="logo-text">Solitude<span class="highlight">Scan</span></span>
-        <p>Leitura profissional de manhwas, mangás e manhuás.</p>
-      </div>
-      <div class="footer-links">
-        <a href="/termos">Termos de Uso</a>
-        <a href="/privacidade">Política de Privacidade</a>
-        <a href="/contato">Contato</a>
-        <a href="/denuncia">Canal de Denúncia</a>
-      </div>
-      <div class="footer-social">
-        <a href="https://discord.gg/fX3wUZBvk" target="_blank" rel="noopener noreferrer" aria-label="Discord">
-          <i class="fa-brands fa-discord" aria-hidden="true"></i>
-        </a>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2026 SolitudeScan. Todos os direitos reservados.</p>
-    </div>
-  </footer>
-
-  <!-- ================= MODAIS ================= -->
-
-  <!-- MODAL: LOGIN -->
-  <div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="loginModalTitle"><i class="fa-solid fa-right-to-bracket" style="color:var(--primaria);" aria-hidden="true"></i> Entrar na Conta</h3>
-        <button class="close-btn" onclick="toggleModal('loginModal')" aria-label="Fechar modal">
-          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-        </button>
-      </div>
-      <form id="loginForm" onsubmit="executarLoginCustom(event)" class="modal-form">
-        <div class="form-group">
-          <label for="loginEmail">E-mail</label>
-          <input type="email" id="loginEmail" required autocomplete="email" aria-required="true">
-        </div>
-        <div class="form-group">
-          <label for="loginSenha">Senha</label>
-          <input type="password" id="loginSenha" required autocomplete="current-password" aria-required="true">
-        </div>
-        <button type="submit" class="btn-primary full-width">Entrar</button>
-        <p class="modal-footer-text">
-          Não tem conta? <a href="#" onclick="abrirCadastro(); return false;">Cadastre-se</a>
-        </p>
-      </form>
     </div>
   </div>
+</nav>
 
-  <!-- MODAL: CADASTRO -->
-  <div class="modal" id="registerModal" role="dialog" aria-modal="true" aria-labelledby="registerModalTitle">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="registerModalTitle"><i class="fa-solid fa-user-plus" style="color:var(--primaria);" aria-hidden="true"></i> Criar Conta</h3>
-        <button class="close-btn" onclick="toggleModal('registerModal')" aria-label="Fechar modal">
-          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-        </button>
-      </div>
-      <form id="registerForm" onsubmit="executarCadastro(event)" class="modal-form">
-        <div class="form-group">
-          <label for="regEmail">E-mail</label>
-          <input type="email" id="regEmail" required autocomplete="email" aria-required="true">
-        </div>
-        <div class="form-group">
-          <label for="regSenha">Senha</label>
-          <input type="password" id="regSenha" required autocomplete="new-password" aria-required="true" minlength="8" placeholder="Mínimo 8 caracteres, letras, números e símbolo">
-        </div>
-        <div class="form-group">
-          <label for="regSenhaConf">Confirmar Senha</label>
-          <input type="password" id="regSenhaConf" required autocomplete="new-password" aria-required="true">
-        </div>
-        <button type="submit" class="btn-primary full-width">Cadastrar</button>
-        <p class="modal-footer-text">
-          Já tem conta? <a href="#" onclick="fazerLogin(); return false;">Faça login</a>
-        </p>
-      </form>
-    </div>
-  </div>
+<main class="container" id="mainContent" tabindex="-1">
 
-  <!-- MODAL: CONFIGURAÇÕES DE PERFIL -->
-  <div class="modal" id="configModal" role="dialog" aria-modal="true" aria-labelledby="configModalTitle">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="configModalTitle"><i class="fa-solid fa-gear" style="color:var(--primaria);" aria-hidden="true"></i> Editar Perfil</h3>
-        <button class="close-btn" onclick="toggleModal('configModal')" aria-label="Fechar modal">
-          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-        </button>
+  <!-- HOME -->
+  <div id="tab-home" class="tab-content active" role="tabpanel" aria-label="Página inicial">
+    <section id="heroBannerSection" class="hero-section" aria-label="Destaques">
+      <div class="hero-slider" role="region" aria-roledescription="carrossel" aria-label="Obras em destaque">
+        <div class="hero-track" id="heroTrack"></div>
       </div>
-      <form id="configForm" onsubmit="salvarPerfil(event)" class="modal-form">
-        <div class="form-group text-center">
-          <img id="editFotoPreview" src="icon.svg" alt="Preview do avatar" class="avatar-preview-large">
-          <label for="editFotoArquivo" class="btn-secondary small">Alterar Foto</label>
-          <input type="file" id="editFotoArquivo" accept="image/*" style="display: none;" onchange="previewFotoPerfil(event)">
-        </div>
-        <div class="form-group">
-          <label for="editNome">Nome de Exibição</label>
-          <input type="text" id="editNome" required maxlength="50">
-        </div>
-        <div class="form-group">
-          <label for="editEmail">E-mail</label>
-          <input type="email" id="editEmail" readonly class="input-readonly">
-        </div>
-        <div class="form-group">
-          <label for="editTel">Telefone (Opcional)</label>
-          <input type="tel" id="editTel" placeholder="(00) 00000-0000">
-        </div>
-        <button type="submit" class="btn-primary full-width">Salvar Alterações</button>
-      </form>
-    </div>
-  </div>
+    </section>
 
-  <!-- MODAL: CONFIRMAÇÃO -->
-  <div class="modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitulo">
-    <div class="modal-content modal-small">
-      <div class="modal-header">
-        <h3 id="confirmTitulo">Confirmação</h3>
+    <section class="search-section" aria-label="Busca de obras">
+      <div class="search-wrapper">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <input type="search" id="searchInput" class="search-input" placeholder="Buscar mangá, manhwa ou autor..." aria-label="Campo de busca de obras" autocomplete="off" enterkeyhint="search">
       </div>
-      <div class="modal-body">
-        <p id="confirmMsg">Tem certeza que deseja realizar esta ação?</p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="toggleModal('confirmModal')">Cancelar</button>
-        <button id="confirmBtnOk" class="btn-danger">Confirmar</button>
-      </div>
-    </div>
-  </div>
+    </section>
 
-  <!-- MODAL: PIX / VIP -->
-  <div class="modal" id="vipModal" role="dialog" aria-modal="true" aria-labelledby="vipModalTitle" style="display: none;">
-    <!-- Conteúdo movido para o pixModal para simplificar o fluxo -->
-  </div>
-
-  <div class="modal" id="pixModal" role="dialog" aria-modal="true" aria-labelledby="pixModalTitle">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="pixModalTitle"><i class="fa-brands fa-pix" style="color:var(--primaria);" aria-hidden="true"></i> Pagamento via Pix</h3>
-        <button class="close-btn" onclick="fecharPixModal()" aria-label="Fechar modal">
-          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-        </button>
-      </div>
-      
-      <div class="pix-info">
-        <p>Plano selecionado: <strong id="pixDetalhePlano">---</strong></p>
-      </div>
-
-      <!-- Passo 1: Dados -->
-      <form id="pixPassoDados" class="modal-form" onsubmit="gerarCobrancaPix(event)">
-        <div class="form-group">
-          <label for="pixNome">Nome Completo</label>
-          <input type="text" id="pixNome" required placeholder="Seu nome para conferência">
-        </div>
-        <div class="form-group">
-          <label for="pixEmail">E-mail</label>
-          <input type="email" id="pixEmail" required placeholder="O VIP será ativado neste e-mail">
-        </div>
-        <button type="submit" class="btn-primary full-width">Gerar Cobrança Pix</button>
-      </form>
-
-      <!-- Passo 2: Pagamento -->
-      <div id="pixPassoPagamento" class="modal-form" style="display: none;">
-        <div class="pix-timer-container">
-          <p>Tempo restante para pagamento:</p>
-          <div id="pixTimer" class="pix-timer">04:30</div>
-        </div>
-        
-        <div class="pix-key-container">
-          <p>Chave Pix (E-mail):</p>
-          <div class="pix-key-box">
-            <code id="pixChaveDisplay">solitudescanoficial@gmail.com</code>
-            <button class="btn-icon" onclick="copiarChavePix()" aria-label="Copiar chave pix" title="Copiar">
-              <i class="fa-regular fa-copy" aria-hidden="true"></i>
-            </button>
-          </div>
-        </div>
-
-        <p class="pix-instructions">1. Abra o app do seu banco.<br>2. Escolha pagar via Pix (copia e cola ou chave).<br>3. Após pagar, clique em "Já realizei o pagamento".</p>
-
-        <button id="btnConfirmarPix" class="btn-primary full-width" onclick="concluirPagamentoPix()">Já realizei o pagamento</button>
-        <p id="pixMsgExpirado" class="error-text" style="display: none; text-align: center; margin-top: 10px;">
-          Tempo esgotado! Esta cobrança expirou.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: DETALHES DA OBRA -->
-  <div class="modal" id="detalhesModal" role="dialog" aria-modal="true" aria-labelledby="detalhesModalTitle">
-    <div class="modal-content modal-large">
-      <div class="modal-header">
-        <h3 id="detalhesModalTitle">Detalhes da Obra</h3>
-        <button class="close-btn" onclick="toggleModal('detalhesModal')" aria-label="Fechar modal">
-          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-        </button>
-      </div>
-      <div class="modal-body" id="detalhesModalBody">
-        <!-- Preenchido via JS -->
-      </div>
-      <div class="modal-footer">
-        <button id="btnFavoritar" class="btn-secondary" onclick="alternarFavorito()">
-          <i class="fa-regular fa-heart" aria-hidden="true"></i> Favoritar
-        </button>
-        <button class="btn-primary" onclick="abrirLeitor()">
-          <i class="fa-solid fa-book-open" aria-hidden="true"></i> Ler Primeiro Capítulo
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: LEITOR -->
-  <div class="modal reader-modal" id="readerModal" role="dialog" aria-modal="true" aria-label="Leitor de capítulos">
-    <div class="reader-header">
-      <button class="btn-icon" onclick="fecharLeitor()" aria-label="Fechar leitor">
-        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-      </button>
-      <span id="readerTitle" class="reader-title">Título do Capítulo</span>
-      <div class="reader-controls">
-        <button class="btn-icon" onclick="ajustarZoom(-10)" aria-label="Diminuir zoom">
-          <i class="fa-solid fa-magnifying-glass-minus" aria-hidden="true"></i>
-        </button>
-        <span id="zoomLevel">100%</span>
-        <button class="btn-icon" onclick="ajustarZoom(10)" aria-label="Aumentar zoom">
-          <i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i>
-        </button>
-        <button class="btn-icon" onclick="alternarModoImersivo()" aria-label="Modo imersivo">
-          <i class="fa-solid fa-expand" aria-hidden="true"></i>
-        </button>
-      </div>
-    </div>
-    
-    <div class="reader-content" id="readerCascataContainer" role="region" aria-label="Páginas do mangá">
-      <!-- Imagens injetadas via JS -->
-    </div>
-
-    <div class="reader-footer">
-      <button class="btn-secondary" onclick="navegarCapitulo(-1)" id="btnCapituloAnterior">
-        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Anterior
-      </button>
-      
-      <select id="listaCapitulosContainer" class="chapter-select" aria-label="Selecionar capítulo">
-        <!-- Preenchido via JS -->
+    <section class="filters-section" aria-label="Filtros de catálogo">
+      <select id="generoFiltro" class="filter-select" aria-label="Filtrar por gênero">
+        <option value="Todos">Todos os Gêneros</option>
       </select>
+      <select id="statusFiltro" class="filter-select" aria-label="Filtrar por status">
+        <option value="Todos">Todos os Status</option>
+        <option value="Em Lançamento">Em Lançamento</option>
+        <option value="Completo">Completo</option>
+        <option value="Hiato">Hiato</option>
+      </select>
+      <select id="ordemFiltro" class="filter-select" aria-label="Ordenar por">
+        <option value="recentes">Mais Recentes</option>
+        <option value="populares">Mais Populares</option>
+        <option value="avaliados">Melhor Avaliados</option>
+      </select>
+    </section>
 
-      <button class="btn-secondary" onclick="navegarCapitulo(1)" id="btnProximoCapitulo">
-        Próximo <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-      </button>
-    </div>
+    <section aria-labelledby="tituloUltimas">
+      <h2 class="section-title" id="tituloUltimas">Últimas Atualizações</h2>
+      <div id="mangaContainer" class="manga-grid" role="list" aria-live="polite"></div>
+    </section>
+
+    <section aria-labelledby="tituloTendencias">
+      <h2 class="section-title" id="tituloTendencias">Tendências da Semana</h2>
+      <div id="tendenciasContainer" class="manga-grid" role="list" aria-live="polite"></div>
+    </section>
+
+    <section id="continueLendoSection" aria-labelledby="tituloContinue" style="display:none;">
+      <h2 class="section-title" id="tituloContinue">Continue Lendo</h2>
+      <div id="continueLendoContainer" class="manga-grid" role="list" aria-live="polite"></div>
+    </section>
+
+    <section aria-labelledby="tituloRanking">
+      <h2 class="section-title" id="tituloRanking">Ranking</h2>
+      <div id="rankingContainer" class="ranking-list" role="list" aria-live="polite"></div>
+    </section>
   </div>
 
-  <!-- MODAL: INFO / AVISOS -->
-  <div class="modal" id="infoModal" role="dialog" aria-modal="true" aria-labelledby="infoModalTitle">
-    <div class="modal-content modal-small">
-      <div class="modal-header">
-        <h3 id="infoModalTitle">Informação</h3>
-        <button class="close-btn" onclick="toggleModal('infoModal')" aria-label="Fechar modal">
-          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <p id="infoModalTexto"></p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-primary full-width" onclick="toggleModal('infoModal')">Entendi</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: PAINEL ADMIN (Básico para suportar o script) -->
-  <div class="modal" id="adminModal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
-    <div class="modal-content modal-large">
-      <div class="modal-header">
-        <h3 id="adminModalTitle"><i class="fa-solid fa-shield-halved" style="color:var(--primaria);" aria-hidden="true"></i> Painel Administrativo</h3>
-        <button class="close-btn" onclick="toggleModal('adminModal')" aria-label="Fechar modal">
-          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="admPaginasArquivo">Upload de Páginas (Imagens ou PDF)</label>
-          <input type="file" id="admPaginasArquivo" accept="image/*,application/pdf" multiple>
-          <small class="form-text">Formatos aceitos: JPG, PNG, WebP, PDF. Tamanho máximo recomendado: 50MB por arquivo.</small>
+  <!-- VIP -->
+  <div id="tab-vip" class="tab-content" role="tabpanel" aria-label="Planos VIP">
+    <section class="vip-section">
+      <h2 class="section-title">Torne-se VIP</h2>
+      <p class="vip-description">Apoie o SolitudeScan e tenha acesso a capítulos antecipados, sem anúncios e com qualidade máxima.</p>
+      <div class="vip-plans-grid">
+        <div class="vip-card">
+          <h3>VIP Mensal</h3>
+          <p class="price">R$ 14,90<span>/mês</span></p>
+          <ul class="vip-benefits">
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Capítulos antecipados</li>
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Leitura sem anúncios</li>
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Suporte prioritário</li>
+          </ul>
+          <button type="button" class="btn-primary full-width" onclick="abrirModalPix('VIP Mensal', 'R$ 14,90')">Assinar Agora</button>
         </div>
-        <button class="btn-primary" onclick="processarUploadAdmin()">Processar Upload</button>
+        <div class="vip-card featured">
+          <div class="vip-badge">Mais Popular</div>
+          <h3>VIP Trimestral</h3>
+          <p class="price">R$ 39,90<span>/3 meses</span></p>
+          <ul class="vip-benefits">
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Todos os benefícios Mensais</li>
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Economia de 11%</li>
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Badge exclusiva no perfil</li>
+          </ul>
+          <button type="button" class="btn-primary full-width" onclick="abrirModalPix('VIP Trimestral', 'R$ 39,90')">Assinar Agora</button>
+        </div>
+        <div class="vip-card">
+          <h3>VIP Anual</h3>
+          <p class="price">R$ 149,90<span>/ano</span></p>
+          <ul class="vip-benefits">
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Todos os benefícios Trimestrais</li>
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Economia de 16%</li>
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Acesso a conteúdos exclusivos</li>
+          </ul>
+          <button type="button" class="btn-primary full-width" onclick="abrirModalPix('VIP Anual', 'R$ 149,90')">Assinar Agora</button>
+        </div>
       </div>
-    </div>
+    </section>
   </div>
 
-  <!-- TOAST CONTAINER -->
-  <div id="toastContainer" class="toast-container" aria-live="polite" role="status"></div>
+  <!-- PERFIL -->
+  <div id="tab-profile" class="tab-content" role="tabpanel" aria-label="Perfil do usuário">
+    <section class="profile-section">
+      <div class="profile-header">
+        <img id="profileAvatarLarge" src="icon.svg" alt="Avatar grande" class="profile-avatar-large" width="96" height="96" decoding="async">
+        <div>
+          <h2 id="profileNameLarge">Nome do Usuário</h2>
+          <span id="profilePlanLarge" class="plan-badge">Plano Gratuito</span>
+        </div>
+      </div>
+      <div class="profile-actions">
+        <button type="button" class="btn-secondary" onclick="abrirConfigPerfil()"><i class="fa-solid fa-gear" aria-hidden="true"></i> Editar Perfil</button>
+        <button type="button" class="btn-secondary" onclick="exportarDadosUsuario()"><i class="fa-solid fa-download" aria-hidden="true"></i> Exportar Meus Dados</button>
+      </div>
+      <div class="profile-tabs" role="tablist" aria-label="Seções do perfil">
+        <button type="button" role="tab" aria-selected="true" class="tab-btn active" onclick="switchTabProfile('historico', this)">Histórico</button>
+        <button type="button" role="tab" aria-selected="false" class="tab-btn" onclick="switchTabProfile('favoritos', this)">Favoritos</button>
+        <button type="button" role="tab" aria-selected="false" class="tab-btn" onclick="switchTabProfile('listas', this)">Minhas Listas</button>
+      </div>
+      <div id="profileHistorico" class="profile-tab-content active"><div id="historicoContainer" class="manga-grid" role="list"></div></div>
+      <div id="profileFavoritos" class="profile-tab-content"><div id="favoritosContainer" class="manga-grid" role="list"></div></div>
+      <div id="profileListas" class="profile-tab-content"><div id="listasContainer" class="listas-grid" role="list"></div></div>
+    </section>
+  </div>
+</main>
 
-  <!-- COOKIE BANNER LGPD -->
-  <div id="cookieBanner" class="cookie-banner" role="dialog" aria-label="Aviso de cookies" style="display: none;">
-    <div class="cookie-content">
-      <p>Utilizamos cookies para melhorar sua experiência de leitura, personalizar conteúdo e analisar nosso tráfego. Ao continuar navegando, você concorda com nossa <a href="/privacidade">Política de Privacidade</a>.</p>
-      <button class="btn-primary small" onclick="aceitarCookies()">Aceitar e Fechar</button>
+<footer id="siteFooter" class="site-footer">
+  <div class="footer-content">
+    <div class="footer-brand">
+      <span class="logo-text">Solitude<span class="highlight">Scan</span></span>
+      <p>Leitura profissional de manhwas, mangás e manhuás.</p>
+    </div>
+    <div class="footer-links">
+      <a href="/termos">Termos de Uso</a>
+      <a href="/privacidade">Política de Privacidade</a>
+      <a href="/contato">Contato</a>
+      <a href="/denuncia">Canal de Denúncia</a>
+    </div>
+    <div class="footer-social">
+      <a href="https://discord.gg/fX3wUZBvk" target="_blank" rel="noopener noreferrer" aria-label="Discord (abre em nova aba)"><i class="fa-brands fa-discord" aria-hidden="true"></i></a>
     </div>
   </div>
+  <div class="footer-bottom"><p>&copy; 2026 SolitudeScan. Todos os direitos reservados.</p></div>
+</footer>
 
-  <!-- BOTÃO INSTALAR APP (PWA) -->
-  <button id="btnInstalarApp" class="pwa-install-btn" style="display: none;" onclick="instalarApp()">
-    <i class="fa-solid fa-download" aria-hidden="true"></i> Instalar App
-  </button>
+<!-- ============ MODAIS ============ -->
 
-  <!-- SCRIPTS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="script.js"></script>
+<div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="loginModalTitle"><i class="fa-solid fa-right-to-bracket" style="color:var(--primaria);" aria-hidden="true"></i> Entrar na Conta</h3>
+      <button type="button" class="close-btn" onclick="toggleModal('loginModal')" aria-label="Fechar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <form id="loginForm" onsubmit="executarLoginCustom(event)" class="modal-form">
+      <div class="form-group"><label for="loginEmail">E-mail</label><input type="email" id="loginEmail" required autocomplete="email"></div>
+      <div class="form-group"><label for="loginSenha">Senha</label><input type="password" id="loginSenha" required autocomplete="current-password"></div>
+      <button type="submit" class="btn-primary full-width">Entrar</button>
+      <p class="modal-footer-text">Não tem conta? <a href="#" onclick="abrirCadastro(); return false;">Cadastre-se</a></p>
+    </form>
+  </div>
+</div>
 
+<div class="modal" id="registerModal" role="dialog" aria-modal="true" aria-labelledby="registerModalTitle">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="registerModalTitle"><i class="fa-solid fa-user-plus" style="color:var(--primaria);" aria-hidden="true"></i> Criar Conta</h3>
+      <button type="button" class="close-btn" onclick="toggleModal('registerModal')" aria-label="Fechar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <form id="registerForm" onsubmit="executarCadastro(event)" class="modal-form">
+      <div class="form-group"><label for="regEmail">E-mail</label><input type="email" id="regEmail" required autocomplete="email"></div>
+      <div class="form-group">
+        <label for="regSenha">Senha</label>
+        <input type="password" id="regSenha" required autocomplete="new-password" minlength="8" pattern="(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}" title="Mínimo 8 caracteres, com letras, números e um símbolo" placeholder="Mínimo 8 caracteres, letras, números e símbolo">
+      </div>
+      <div class="form-group"><label for="regSenhaConf">Confirmar Senha</label><input type="password" id="regSenhaConf" required autocomplete="new-password" minlength="8"></div>
+      <button type="submit" class="btn-primary full-width">Cadastrar</button>
+      <p class="modal-footer-text">Já tem conta? <a href="#" onclick="fazerLogin(); return false;">Faça login</a></p>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="configModal" role="dialog" aria-modal="true" aria-labelledby="configModalTitle">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="configModalTitle"><i class="fa-solid fa-gear" style="color:var(--primaria);" aria-hidden="true"></i> Editar Perfil</h3>
+      <button type="button" class="close-btn" onclick="toggleModal('configModal')" aria-label="Fechar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <form id="configForm" onsubmit="salvarPerfil(event)" class="modal-form">
+      <div class="form-group text-center">
+        <img id="editFotoPreview" src="icon.svg" alt="Preview do avatar" class="avatar-preview-large" width="96" height="96">
+        <label for="editFotoArquivo" class="btn-secondary small">Alterar Foto</label>
+        <input type="file" id="editFotoArquivo" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="previewFotoPerfil(event)">
+      </div>
+      <div class="form-group"><label for="editNome">Nome de Exibição</label><input type="text" id="editNome" required maxlength="50" autocomplete="nickname"></div>
+      <div class="form-group"><label for="editEmail">E-mail</label><input type="email" id="editEmail" readonly class="input-readonly"></div>
+      <div class="form-group"><label for="editTel">Telefone (Opcional)</label><input type="tel" id="editTel" placeholder="(00) 00000-0000" autocomplete="tel"></div>
+      <button type="submit" class="btn-primary full-width">Salvar Alterações</button>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="confirmModal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitulo" aria-describedby="confirmMsg">
+  <div class="modal-content modal-small">
+    <div class="modal-header"><h3 id="confirmTitulo">Confirmação</h3></div>
+    <div class="modal-body"><p id="confirmMsg">Tem certeza que deseja realizar esta ação?</p></div>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" onclick="toggleModal('confirmModal')">Cancelar</button>
+      <button type="button" id="confirmBtnOk" class="btn-danger">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- PIX / VIP (o antigo #vipModal estava vazio e foi removido) -->
+<div class="modal" id="pixModal" role="dialog" aria-modal="true" aria-labelledby="pixModalTitle">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="pixModalTitle"><i class="fa-brands fa-pix" style="color:var(--primaria);" aria-hidden="true"></i> Pagamento via Pix</h3>
+      <button type="button" class="close-btn" onclick="fecharPixModal()" aria-label="Fechar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <div class="pix-info"><p>Plano selecionado: <strong id="pixDetalhePlano">---</strong></p></div>
+
+    <form id="pixPassoDados" class="modal-form" onsubmit="gerarCobrancaPix(event)">
+      <div class="form-group"><label for="pixNome">Nome Completo</label><input type="text" id="pixNome" required autocomplete="name" placeholder="Seu nome para conferência"></div>
+      <div class="form-group"><label for="pixEmail">E-mail</label><input type="email" id="pixEmail" required autocomplete="email" placeholder="O VIP será ativado neste e-mail"></div>
+      <button type="submit" class="btn-primary full-width">Gerar Cobrança Pix</button>
+    </form>
+
+    <div id="pixPassoPagamento" class="modal-form" style="display:none;">
+      <div class="pix-timer-container">
+        <p>Tempo restante para pagamento:</p>
+        <div id="pixTimer" class="pix-timer" role="timer" aria-live="off">04:30</div>
+      </div>
+      <div class="pix-key-container">
+        <p>Chave Pix (E-mail):</p>
+        <div class="pix-key-box">
+          <code id="pixChaveDisplay">solitudescanoficial@gmail.com</code>
+          <button type="button" class="btn-icon" onclick="copiarChavePix()" aria-label="Copiar chave Pix" title="Copiar"><i class="fa-regular fa-copy" aria-hidden="true"></i></button>
+        </div>
+      </div>
+      <p class="pix-instructions">1. Abra o app do seu banco.<br>2. Escolha pagar via Pix (copia e cola ou chave).<br>3. Após pagar, clique em "Já realizei o pagamento".</p>
+      <button type="button" id="btnConfirmarPix" class="btn-primary full-width" onclick="concluirPagamentoPix()">Já realizei o pagamento</button>
+      <p id="pixMsgExpirado" class="error-text" role="alert" style="display:none;text-align:center;margin-top:10px;">Tempo esgotado! Esta cobrança expirou.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="detalhesModal" role="dialog" aria-modal="true" aria-labelledby="detalhesModalTitle">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h3 id="detalhesModalTitle">Detalhes da Obra</h3>
+      <button type="button" class="close-btn" onclick="toggleModal('detalhesModal')" aria-label="Fechar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <div class="modal-body" id="detalhesModalBody"></div>
+    <div class="modal-footer">
+      <button type="button" id="btnFavoritar" class="btn-secondary" onclick="alternarFavorito()" aria-pressed="false"><i class="fa-regular fa-heart" aria-hidden="true"></i> Favoritar</button>
+      <button type="button" class="btn-primary" onclick="abrirLeitor()"><i class="fa-solid fa-book-open" aria-hidden="true"></i> Ler Primeiro Capítulo</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal reader-modal" id="readerModal" role="dialog" aria-modal="true" aria-label="Leitor de capítulos">
+  <div class="reader-header">
+    <button type="button" class="btn-icon" onclick="fecharLeitor()" aria-label="Fechar leitor"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    <span id="readerTitle" class="reader-title">Título do Capítulo</span>
+    <div class="reader-controls">
+      <button type="button" class="btn-icon" onclick="ajustarZoom(-10)" aria-label="Diminuir zoom"><i class="fa-solid fa-magnifying-glass-minus" aria-hidden="true"></i></button>
+      <span id="zoomLevel" aria-live="polite">100%</span>
+      <button type="button" class="btn-icon" onclick="ajustarZoom(10)" aria-label="Aumentar zoom"><i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i></button>
+      <button type="button" class="btn-icon" onclick="alternarModoImersivo()" aria-label="Modo imersivo"><i class="fa-solid fa-expand" aria-hidden="true"></i></button>
+    </div>
+  </div>
+  <div class="reader-content" id="readerCascataContainer" role="region" aria-label="Páginas do mangá"></div>
+  <div class="reader-footer">
+    <button type="button" class="btn-secondary" onclick="navegarCapitulo(-1)" id="btnCapituloAnterior"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Anterior</button>
+    <select id="listaCapitulosContainer" class="chapter-select" aria-label="Selecionar capítulo"></select>
+    <button type="button" class="btn-secondary" onclick="navegarCapitulo(1)" id="btnProximoCapitulo">Próximo <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+  </div>
+</div>
+
+<div class="modal" id="infoModal" role="dialog" aria-modal="true" aria-labelledby="infoModalTitle">
+  <div class="modal-content modal-small">
+    <div class="modal-header">
+      <h3 id="infoModalTitle">Informação</h3>
+      <button type="button" class="close-btn" onclick="toggleModal('infoModal')" aria-label="Fechar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <div class="modal-body"><p id="infoModalTexto"></p></div>
+    <div class="modal-footer"><button type="button" class="btn-primary full-width" onclick="toggleModal('infoModal')">Entendi</button></div>
+  </div>
+</div>
+
+<div class="modal" id="adminModal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h3 id="adminModalTitle"><i class="fa-solid fa-shield-halved" style="color:var(--primaria);" aria-hidden="true"></i> Painel Administrativo</h3>
+      <button type="button" class="close-btn" onclick="toggleModal('adminModal')" aria-label="Fechar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="admPaginasArquivo">Upload de Páginas (Imagens ou PDF)</label>
+        <input type="file" id="admPaginasArquivo" accept="image/jpeg,image/png,image/webp,application/pdf" multiple>
+        <small class="form-text">Formatos aceitos: JPG, PNG, WebP, PDF. Tamanho máximo recomendado: 50MB por arquivo.</small>
+      </div>
+      <button type="button" class="btn-primary" onclick="processarUploadAdmin()">Processar Upload</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer" class="toast-container" aria-live="polite" role="status"></div>
+
+<div id="cookieBanner" class="cookie-banner" role="dialog" aria-label="Aviso de cookies" style="display:none;">
+  <div class="cookie-content">
+    <p>Utilizamos cookies para melhorar sua experiência de leitura, personalizar conteúdo e analisar nosso tráfego. Ao continuar navegando, você concorda com nossa <a href="/privacidade">Política de Privacidade</a>.</p>
+    <button type="button" class="btn-primary small" onclick="aceitarCookies()">Aceitar e Fechar</button>
+  </div>
+</div>
+
+<button type="button" id="btnInstalarApp" class="pwa-install-btn" style="display:none;" onclick="instalarApp()">
+  <i class="fa-solid fa-download" aria-hidden="true"></i> Instalar App
+</button>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" defer></script>
+<script src="script.js" defer></script>
 </body>
 </html>
