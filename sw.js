@@ -1,9 +1,11 @@
-const CACHE = 'solitude-v2';
+const CACHE = 'solitude-v3';
 const CORE = ['/', '/index.html', '/style.css', '/script.js', '/manifest.webmanifest', '/icon.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting())
+    caches.open(CACHE)
+      .then(c => Promise.all(CORE.map(url => c.add(url).catch(() => null))))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -16,18 +18,26 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  const url = new URL(e.request.url);
-  // Never intercept Supabase/API/auth traffic or third-party resources.
-  if (url.hostname === 'supabase.co' || url.hostname.endsWith('.supabase.co')) return;
-  if (url.origin !== self.location.origin) return;
+  const req = e.request;
+  if (req.method !== 'GET' || req.headers.has('range')) return;
+
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin || url.pathname === '/sw.js') return;
+
   e.respondWith(
-    fetch(e.request)
+    fetch(req)
       .then(res => {
-        const copia = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copia));
+        if (res.ok && res.status === 200 && res.type === 'basic') {
+          const copia = res.clone();
+          e.waitUntil(caches.open(CACHE).then(c => c.put(req, copia)));
+        }
         return res;
       })
-      .catch(() => caches.match(e.request).then(r => r || caches.match('/index.html')))
+      .catch(async () => {
+        const salvo = await caches.match(req, { ignoreSearch: req.mode === 'navigate' });
+        if (salvo) return salvo;
+        if (req.mode === 'navigate') return (await caches.match('/index.html')) || Response.error();
+        return Response.error();
+      })
   );
 });
