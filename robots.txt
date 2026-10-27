@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /*?testes=
 
 Sitemap: https://solitudescan.com/sitemap.xml
