@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#ec4899">
-
-<!-- CSP: frame-ancestors NÃO funciona em <meta>; configure no header HTTP do servidor/hospedagem -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src * data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self';">
 
 <title>SolitudeScan | Leia Manhwas, Mangás e Manhuás Online</title>
@@ -59,14 +57,14 @@
     <a href="/" aria-label="SolitudeScan - Página inicial"><span class="logo-text">Solitude<span class="highlight">Scan</span></span></a>
   </div>
   <div class="navbar-actions">
+    <button type="button" class="nav-btn nav-item active" data-tab="tab-home" onclick="switchTab('tab-home', this)"><i class="fa-solid fa-house" aria-hidden="true"></i><span>Início</span></button>
+    <button type="button" class="nav-btn nav-item" data-tab="tab-vip" onclick="switchTab('tab-vip', this)"><i class="fa-solid fa-crown" aria-hidden="true"></i><span>VIP</span></button>
+    <button type="button" class="nav-btn nav-item" data-tab="tab-profile" onclick="switchTab('tab-profile', this)"><i class="fa-solid fa-user" aria-hidden="true"></i><span>Perfil</span></button>
     <button type="button" id="btnAdminNav" class="nav-btn" style="display:none;" aria-label="Painel administrativo">
       <i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span>Admin</span>
     </button>
     <button type="button" class="nav-btn theme-toggle" id="themeToggleBtn" aria-label="Alternar tema claro/escuro">
       <i class="fa-solid fa-moon" id="iconeTemaBotao" aria-hidden="true"></i>
-    </button>
-    <button type="button" class="nav-btn" onclick="abrirConfigPerfil()" aria-label="Abrir perfil do usuário">
-      <i class="fa-solid fa-user" aria-hidden="true"></i>
     </button>
 
     <div id="loggedOutView" class="auth-buttons">
@@ -89,7 +87,6 @@
 
 <main class="container" id="mainContent" tabindex="-1">
 
-  <!-- HOME -->
   <div id="tab-home" class="tab-content active" role="tabpanel" aria-label="Página inicial">
     <section id="heroBannerSection" class="hero-section" aria-label="Destaques">
       <div class="hero-slider" role="region" aria-roledescription="carrossel" aria-label="Obras em destaque">
@@ -142,7 +139,6 @@
     </section>
   </div>
 
-  <!-- VIP -->
   <div id="tab-vip" class="tab-content" role="tabpanel" aria-label="Planos VIP">
     <section class="vip-section">
       <h2 class="section-title">Torne-se VIP</h2>
@@ -156,7 +152,7 @@
             <li><i class="fa-solid fa-check" aria-hidden="true"></i> Leitura sem anúncios</li>
             <li><i class="fa-solid fa-check" aria-hidden="true"></i> Suporte prioritário</li>
           </ul>
-          <button type="button" class="btn-primary full-width" onclick="abrirModalPix('VIP Mensal', 'R$ 14,90')">Assinar Agora</button>
+          <button type="button" class="btn-primary full-width" onclick="abrirModalPix('VIP Mensal')">Assinar Agora</button>
         </div>
         <div class="vip-card featured">
           <div class="vip-badge">Mais Popular</div>
@@ -167,7 +163,7 @@
             <li><i class="fa-solid fa-check" aria-hidden="true"></i> Economia de 11%</li>
             <li><i class="fa-solid fa-check" aria-hidden="true"></i> Badge exclusiva no perfil</li>
           </ul>
-          <button type="button" class="btn-primary full-width" onclick="abrirModalPix('VIP Trimestral', 'R$ 39,90')">Assinar Agora</button>
+          <button type="button" class="btn-primary full-width" onclick="abrirModalPix('VIP Trimestral')">Assinar Agora</button>
         </div>
         <div class="vip-card">
           <h3>VIP Anual</h3>
@@ -177,13 +173,12 @@
             <li><i class="fa-solid fa-check" aria-hidden="true"></i> Economia de 16%</li>
             <li><i class="fa-solid fa-check" aria-hidden="true"></i> Acesso a conteúdos exclusivos</li>
           </ul>
-          <button type="button" class="btn-primary full-width" onclick="abrirModalPix('VIP Anual', 'R$ 149,90')">Assinar Agora</button>
+          <button type="button" class="btn-primary full-width" onclick="abrirModalPix('VIP Anual')">Assinar Agora</button>
         </div>
       </div>
     </section>
   </div>
 
-  <!-- PERFIL -->
   <div id="tab-profile" class="tab-content" role="tabpanel" aria-label="Perfil do usuário">
     <section class="profile-section">
       <div class="profile-header">
@@ -227,8 +222,6 @@
   </div>
   <div class="footer-bottom"><p>&copy; 2026 SolitudeScan. Todos os direitos reservados.</p></div>
 </footer>
-
-<!-- ============ MODAIS ============ -->
 
 <div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
   <div class="modal-content">
@@ -295,7 +288,6 @@
   </div>
 </div>
 
-<!-- PIX / VIP (o antigo #vipModal estava vazio e foi removido) -->
 <div class="modal" id="pixModal" role="dialog" aria-modal="true" aria-labelledby="pixModalTitle">
   <div class="modal-content">
     <div class="modal-header">
@@ -380,12 +372,87 @@
       <button type="button" class="close-btn" onclick="toggleModal('adminModal')" aria-label="Fechar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     </div>
     <div class="modal-body">
+      <div class="admin-stats">
+        <div class="admin-stat"><strong id="adminStatObras">0</strong><span>Obras</span></div>
+        <div class="admin-stat"><strong id="adminStatUsuarios">0</strong><span>Usuários</span></div>
+        <div class="admin-stat"><strong id="adminStatPagamentos">0</strong><span>Pix a conferir</span></div>
+        <div class="admin-stat"><strong id="adminStatDenuncias">0</strong><span>Denúncias</span></div>
+      </div>
+      <div class="admin-tabs" role="tablist" aria-label="Seções do painel">
+        <button type="button" role="tab" class="admin-tab-btn active" data-tab="obras" onclick="trocarAbaAdmin('obras')">Obras</button>
+        <button type="button" role="tab" class="admin-tab-btn" data-tab="usuarios" onclick="trocarAbaAdmin('usuarios')">Usuários</button>
+        <button type="button" role="tab" class="admin-tab-btn" data-tab="pagamentos" onclick="trocarAbaAdmin('pagamentos')">Pagamentos</button>
+        <button type="button" role="tab" class="admin-tab-btn" data-tab="denuncias" onclick="trocarAbaAdmin('denuncias')">Denúncias</button>
+      </div>
+      <div id="adminTabObras" class="admin-tab-content active">
+        <button type="button" class="btn-primary" onclick="abrirFormularioObra()"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nova Obra</button>
+        <div id="adminObrasLista"></div>
+        <div id="adminCapitulosLista"></div>
+      </div>
+      <div id="adminTabUsuarios" class="admin-tab-content"><div id="adminUsuariosLista"></div></div>
+      <div id="adminTabPagamentos" class="admin-tab-content"><div id="adminPagamentosLista"></div></div>
+      <div id="adminTabDenuncias" class="admin-tab-content"><div id="adminDenunciasLista"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="adminObraFormModal" role="dialog" aria-modal="true" aria-labelledby="adminObraFormTitulo">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="adminObraFormTitulo">Nova Obra</h3>
+      <button type="button" class="close-btn" onclick="toggleModal('adminObraFormModal')" aria-label="Fechar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <form id="adminObraForm" onsubmit="salvarObraAdmin(event)" class="modal-form">
+      <div class="form-group"><label for="admObraTitulo">Título</label><input type="text" id="admObraTitulo" required maxlength="200"></div>
+      <div class="form-group"><label for="admObraAutor">Autor</label><input type="text" id="admObraAutor" maxlength="120"></div>
+      <div class="form-group"><label for="admObraArtista">Artista</label><input type="text" id="admObraArtista" maxlength="120"></div>
+      <div class="form-group"><label for="admObraSinopse">Sinopse</label><textarea id="admObraSinopse" rows="5" maxlength="3000"></textarea></div>
+      <div class="form-group">
+        <label for="admObraStatus">Status</label>
+        <select id="admObraStatus"><option value="Em Lançamento">Em Lançamento</option><option value="Completo">Completo</option><option value="Hiato">Hiato</option></select>
+      </div>
+      <div class="form-group">
+        <label for="admObraTipo">Tipo</label>
+        <select id="admObraTipo"><option value="Manhwa">Manhwa</option><option value="Mangá">Mangá</option><option value="Manhua">Manhua</option></select>
+      </div>
+      <div class="form-group"><label for="admObraCapa">Capa (até 5MB)</label><input type="file" id="admObraCapa" accept="image/jpeg,image/png,image/webp"></div>
+      <label class="checkbox-spoiler"><input type="checkbox" id="admObraExclusivo"><span>Exclusivo VIP</span></label>
+      <label class="checkbox-spoiler"><input type="checkbox" id="admObraAdulto"><span>Conteúdo adulto (+18)</span></label>
+      <label class="checkbox-spoiler"><input type="checkbox" id="admObraDestaque"><span>Destaque na home</span></label>
+      <button type="submit" class="btn-primary full-width">Salvar Obra</button>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="adminCapituloFormModal" role="dialog" aria-modal="true" aria-labelledby="adminCapituloFormTitulo">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="adminCapituloFormTitulo">Novo Capítulo</h3>
+      <button type="button" class="close-btn" onclick="toggleModal('adminCapituloFormModal')" aria-label="Fechar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <form id="adminCapituloForm" onsubmit="salvarCapituloAdmin(event)" class="modal-form">
+      <div class="form-group"><label for="admCapTitulo">Título</label><input type="text" id="admCapTitulo" required maxlength="200"></div>
+      <div class="form-group"><label for="admCapNumero">Número</label><input type="number" id="admCapNumero" required step="0.1" min="0"></div>
+      <label class="checkbox-spoiler"><input type="checkbox" id="admCapVip"><span>Capítulo exclusivo VIP</span></label>
+      <button type="submit" class="btn-primary full-width">Salvar Capítulo</button>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="adminPaginasModal" role="dialog" aria-modal="true" aria-labelledby="adminPaginasTitulo">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h3 id="adminPaginasTitulo">Páginas do Capítulo</h3>
+      <button type="button" class="close-btn" onclick="toggleModal('adminPaginasModal')" aria-label="Fechar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <div class="modal-body">
       <div class="form-group">
         <label for="admPaginasArquivo">Upload de Páginas (Imagens ou PDF)</label>
         <input type="file" id="admPaginasArquivo" accept="image/jpeg,image/png,image/webp,application/pdf" multiple>
-        <small class="form-text">Formatos aceitos: JPG, PNG, WebP, PDF. Tamanho máximo recomendado: 50MB por arquivo.</small>
+        <small class="form-text">Formatos aceitos: JPG, PNG, WebP, PDF. Máximo de 50MB por arquivo.</small>
       </div>
-      <button type="button" class="btn-primary" onclick="processarUploadAdmin()">Processar Upload</button>
+      <button type="button" class="btn-primary" onclick="processarUploadAdmin()">Enviar Páginas</button>
+      <div id="adminPaginasLista" class="admin-paginas-grid"></div>
     </div>
   </div>
 </div>
