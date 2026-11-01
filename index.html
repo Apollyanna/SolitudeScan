@@ -172,6 +172,16 @@
           <button type="button" class="btn-secondary" onclick="abrirCadastro()">Cadastrar</button>
         </div>
       </div>
+      <div id="loggedInView" class="user-profile-mini" style="display:none;">
+        <img id="userAvatarImg" src="icon.svg" alt="Avatar do usuário" class="user-avatar-mini" width="36" height="36" decoding="async">
+        <div class="user-info-mini">
+          <span id="userNameDisplay" class="user-name">Leitor</span>
+          <span id="userPlanBadge" class="plan-badge">Plano Gratuito</span>
+        </div>
+        <button type="button" class="btn-icon" onclick="fazerLogout()" aria-label="Sair da conta" title="Sair">
+          <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+        </button>
+      </div>
       <div class="profile-header">
         <img id="profileAvatarLarge" src="icon.svg" alt="Avatar grande" class="profile-avatar-large" width="96" height="96" decoding="async">
         <div>
@@ -182,7 +192,6 @@
       <div class="profile-actions">
         <button type="button" class="btn-secondary" onclick="abrirConfigPerfil()"><i class="fa-solid fa-gear" aria-hidden="true"></i> Editar Perfil</button>
         <button type="button" class="btn-secondary" onclick="exportarDadosUsuario()"><i class="fa-solid fa-download" aria-hidden="true"></i> Exportar Meus Dados</button>
-        <button type="button" class="btn-danger" onclick="fazerLogout()"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Sair</button>
       </div>
       <div class="profile-tabs" role="tablist" aria-label="Seções do perfil">
         <button type="button" role="tab" aria-selected="true" class="tab-btn active" onclick="switchTabProfile('historico', this)">Histórico</button>
