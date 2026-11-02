@@ -1,0 +1,59 @@
+========================================
+  SOLITUDE SCAN — FAÇA SÓ ISTO (3 minutos)
+========================================
+
+PASSO 1 — Abrir o Supabase
+--------------------------
+1. Abra o navegador
+2. Entre em: https://supabase.com/dashboard
+3. Faça login
+4. Clique no projeto do SolitudeScan
+   (o que tem a URL zvpehjzbwastofjytogn)
+
+
+PASSO 2 — Abrir o SQL Editor
+----------------------------
+No menu da esquerda, clique em:
+  SQL Editor  (ícone de banco / terminal)
+
+
+PASSO 3 — Colar o SQL
+---------------------
+1. Clique em "New query" (Nova consulta)
+2. Abra o arquivo COLE_ISTO_NO_SUPABASE.sql
+3. Copie TODO o conteúdo (Ctrl+A e Ctrl+C)
+4. Cole na caixa branca do SQL Editor
+5. Clique no botão verde RUN (ou Ctrl+Enter)
+
+
+PASSO 4 — Ver se deu certo
+--------------------------
+No final deve aparecer algo como:
+  obras_publicadas | capitulos | admins
+  6                | 30        | 1
+
+Se aparecer ERRO vermelho:
+  - Tire uma print ou copie a mensagem
+  - Me mande que eu corrijo na hora
+
+
+PASSO 5 — Testar o site
+-----------------------
+1. Abra o site SolitudeScan
+2. Atualize a página (F5)
+3. Você deve ver 6 obras na home
+4. Entre com a conta isabella (ou a sua)
+5. No painel deve aparecer opção de Admin
+
+
+IMPORTANTE sobre as páginas (imagens dos capítulos)
+----------------------------------------------------
+O SQL cria as OBRAS e os CAPÍTULOS.
+As IMAGENS das páginas você sobe depois pelo Admin:
+  Admin → escolher obra → capítulos → upload de páginas
+
+Por enquanto o site já mostra capa, sinopse, lista de capítulos e ranking.
+
+
+Pronto. É só isso.
+========================================
