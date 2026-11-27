@@ -457,19 +457,25 @@ ul, ol { list-style: none; }
 .rail > * { flex: 0 0 clamp(132px, 38vw, 168px); scroll-snap-align: start; }
 
 /* Continue lendo */
-.continue-reading {
-  display: flex; gap: 10px; align-items: center; padding: 10px;
-  background: var(--fundo-card); border: 1px solid var(--borda); border-radius: var(--r-md);
-  transition: border-color var(--trans);
-}
-.continue-reading:hover { border-color: var(--primaria); }
+.continue-reading .manga-cover { border-color: rgba(var(--primaria-rgb), 0.35); }
 .continue-badge {
-  flex: 0 0 auto; width: 34px; height: 34px; border-radius: 999px;
-  display: grid; place-items: center; background: rgba(var(--primaria-rgb), 0.14); color: var(--rosa-claro);
+  position: absolute; top: 7px; left: 7px; right: 7px; z-index: 3;
+  display: inline-flex; align-items: center; gap: 5px; width: fit-content;
+  max-width: calc(100% - 14px);
+  font-size: 0.6rem; font-weight: 800; color: #fff;
+  background: rgba(var(--primaria-rgb), 0.92); padding: 3px 8px; border-radius: 999px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.continue-text { min-width: 0; }
-.continue-text strong { display: block; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.continue-date { font-size: 0.68rem; color: var(--texto-3); }
+.continue-date {
+  position: absolute; bottom: 7px; left: 7px; z-index: 3;
+  font-size: 0.62rem; font-weight: 700; color: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.5); padding: 2px 7px; border-radius: 999px;
+}
+.continue-text {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 0.7rem; font-weight: 700; color: var(--rosa-claro);
+}
+.continue-text i { font-size: 0.58rem; }
 
 /* ---------------------------------------------------------------- Ranking */
 .ranking-list { display: grid; gap: 8px; }
