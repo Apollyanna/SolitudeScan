@@ -9,4 +9,4 @@ EXPOSE 3000
 RUN mkdir -p /app /home/appjet && chown -R 10001:10001 /app /home/appjet
 ENV HOME=/home/appjet
 USER 10001:10001
-CMD python3 -m http.server "$PORT" --bind 0.0.0.0
+CMD ["python3", "serve.py"]
