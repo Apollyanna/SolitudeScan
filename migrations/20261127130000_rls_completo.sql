@@ -34,7 +34,7 @@ create table if not exists public.security_events (
 
 create index if not exists security_events_created_idx on public.security_events (created_at desc);
 
-alter table public.security_events enable row level security;
+alter table if exists public.security_events enable row level security;
 
 drop policy if exists security_events_admin_read on public.security_events;
 create policy security_events_admin_read
@@ -183,7 +183,7 @@ create trigger trg_protect_payment_request_fields
 -- ============================================================
 
 -- CATÁLOGO: works
-alter table public.works enable row level security;
+alter table if exists public.works enable row level security;
 
 drop policy if exists works_public_read on public.works;
 create policy works_public_read
@@ -196,7 +196,7 @@ create policy works_admin_write
   using (public.is_admin()) with check (public.is_admin());
 
 -- GÊNEROS
-alter table public.genres enable row level security;
+alter table if exists public.genres enable row level security;
 
 drop policy if exists genres_public_read on public.genres;
 create policy genres_public_read
@@ -208,7 +208,7 @@ create policy genres_admin_write
   on public.genres for all to authenticated
   using (public.is_admin()) with check (public.is_admin());
 
-alter table public.work_genres enable row level security;
+alter table if exists public.work_genres enable row level security;
 
 drop policy if exists work_genres_public_read on public.work_genres;
 create policy work_genres_public_read
@@ -221,14 +221,14 @@ create policy work_genres_admin_write
   using (public.is_admin()) with check (public.is_admin());
 
 -- CAPÍTULOS E PÁGINAS: leitura pública somente de obra publicada
-alter table public.chapters enable row level security;
+alter table if exists public.chapters enable row level security;
 
 drop policy if exists chapters_admin_write on public.chapters;
 create policy chapters_admin_write
   on public.chapters for all to authenticated
   using (public.is_admin()) with check (public.is_admin());
 
-alter table public.pages enable row level security;
+alter table if exists public.pages enable row level security;
 
 drop policy if exists pages_admin_write on public.pages;
 create policy pages_admin_write
@@ -236,7 +236,7 @@ create policy pages_admin_write
   using (public.is_admin()) with check (public.is_admin());
 
 -- PERFIS: leitura autenticada (necessária para admin e para o próprio perfil)
-alter table public.profiles enable row level security;
+alter table if exists public.profiles enable row level security;
 
 drop policy if exists profiles_read_authenticated on public.profiles;
 create policy profiles_read_authenticated
@@ -266,7 +266,7 @@ grant select (id, username, display_name, avatar_url, is_admin, is_vip, created_
   on public.profiles to anon;
 
 -- FAVORITOS: cada usuário gerencia apenas os próprios
-alter table public.favorites enable row level security;
+alter table if exists public.favorites enable row level security;
 
 drop policy if exists favorites_select_own on public.favorites;
 create policy favorites_select_own
@@ -284,7 +284,7 @@ create policy favorites_delete_own
   using (user_id = auth.uid());
 
 -- AVALIAÇÕES: leitura pública da nota, escrita apenas do próprio voto
-alter table public.ratings enable row level security;
+alter table if exists public.ratings enable row level security;
 
 drop policy if exists ratings_public_read on public.ratings;
 create policy ratings_public_read
@@ -307,7 +307,7 @@ create policy ratings_delete_own
   using (user_id = auth.uid());
 
 -- COMENTÁRIOS: leitura pública, escrita e edição apenas do autor
-alter table public.comments enable row level security;
+alter table if exists public.comments enable row level security;
 
 drop policy if exists comments_public_read on public.comments;
 create policy comments_public_read
@@ -330,7 +330,7 @@ create policy comments_delete_own_or_admin
   using (user_id = auth.uid() or public.is_admin());
 
 -- CURTIDAS
-alter table public.likes enable row level security;
+alter table if exists public.likes enable row level security;
 
 drop policy if exists likes_public_read on public.likes;
 create policy likes_public_read
@@ -348,7 +348,7 @@ create policy likes_delete_own
   using (user_id = auth.uid());
 
 -- DENÚNCIAS: autor vê as próprias; equipe vê e trata todas
-alter table public.reports enable row level security;
+alter table if exists public.reports enable row level security;
 
 drop policy if exists reports_insert_own on public.reports;
 create policy reports_insert_own
@@ -371,7 +371,7 @@ create policy reports_delete_admin
   using (public.is_admin());
 
 -- NOTIFICAÇÕES: usuário lê e marca as suas; equipe cria para os usuários
-alter table public.notifications enable row level security;
+alter table if exists public.notifications enable row level security;
 
 drop policy if exists notifications_select_own on public.notifications;
 create policy notifications_select_own
@@ -394,7 +394,7 @@ create policy notifications_delete_admin
   using (public.is_admin());
 
 -- LISTAS PESSOAIS
-alter table public.user_lists enable row level security;
+alter table if exists public.user_lists enable row level security;
 
 drop policy if exists user_lists_select_own_or_public on public.user_lists;
 create policy user_lists_select_own_or_public
@@ -416,7 +416,7 @@ create policy user_lists_delete_own
   on public.user_lists for delete to authenticated
   using (user_id = auth.uid());
 
-alter table public.user_list_items enable row level security;
+alter table if exists public.user_list_items enable row level security;
 
 drop policy if exists user_list_items_select on public.user_list_items;
 create policy user_list_items_select
@@ -440,7 +440,7 @@ create policy user_list_items_write_own
   ));
 
 -- PAGAMENTOS: usuário acompanha a própria solicitação; equipe aprova
-alter table public.payment_requests enable row level security;
+alter table if exists public.payment_requests enable row level security;
 
 drop policy if exists payment_requests_select_own_or_admin on public.payment_requests;
 create policy payment_requests_select_own_or_admin
@@ -459,7 +459,7 @@ create policy payment_requests_update_own_or_admin
   with check (user_id = auth.uid() or public.is_admin());
 
 -- SOLICITAÇÕES DE EXCLUSÃO DE CONTA
-alter table public.account_deletion_requests enable row level security;
+alter table if exists public.account_deletion_requests enable row level security;
 
 drop policy if exists account_deletion_select_own_or_admin on public.account_deletion_requests;
 create policy account_deletion_select_own_or_admin
