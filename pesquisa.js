@@ -133,13 +133,11 @@
     }
     c.carregando = true;
     try {
-      var base = '*, genres:work_genres(genres(name)), chapters(count)';
-      var completo = 'alternative_title, alternative_titles, tags, demographic, ' + base;
-      var resposta = await cliente.from('works').select(completo).order('updated_at', { ascending: false });
-      if (resposta.error) {
-        /* O banco ainda pode não ter as colunas opcionais: mantém o catálogo funcional. */
-        resposta = await cliente.from('works').select(base).order('updated_at', { ascending: false });
-      }
+      /* `*` traz apenas as colunas existentes: funciona antes e depois da
+         migração opcional (alternative_title, tags, demographic), sem gerar
+         requisição inválida nem erro no console. */
+      var selecao = '*, genres:work_genres(genres(name)), chapters(count)';
+      var resposta = await cliente.from('works').select(selecao).order('updated_at', { ascending: false });
       if (resposta.error) throw resposta.error;
 
       c.obrasRemotas = (resposta.data || []).map(mapearObra);
