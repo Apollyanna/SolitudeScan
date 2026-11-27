@@ -177,6 +177,11 @@
   }
 
   PF.papel = function () { return ESTADO.papel; };
+
+  /* Interfaces usadas pelo módulo de publicação (publicacao.js). */
+  PF.sb = sb;
+  PF.usuarioAtual = function () { return ESTADO.usuario; };
+  PF.ehStaff = function () { return ESTADO.papel === 'admin' || ESTADO.papel === 'cooperador'; };
   PF.ehAdmin = function () { return ESTADO.papel === 'admin'; };
   PF.ehStaff = function () { return ESTADO.papel === 'admin' || ESTADO.papel === 'cooperador'; };
   PF.perfil = function () { return ESTADO.perfil; };
