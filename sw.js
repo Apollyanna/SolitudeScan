@@ -1,4 +1,4 @@
-const CACHE = 'solitude-v5';
+const CACHE = 'solitude-v6';
 const CORE = [
   '/',
   '/index.html',

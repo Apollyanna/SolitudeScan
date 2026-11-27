@@ -318,10 +318,10 @@ async function executarLoginCustom(e) {
 
   const { data, error } = await AppState.supabase.auth.signInWithPassword({ email, password: senha });
   if (error) {
-    const msg = /confirmed/i.test(error.message)
-      ? 'Sua conta ainda não foi confirmada. Abra o link que enviamos para seu e-mail e tente de novo.'
-      : 'E-mail ou senha incorretos.';
-    mostrarToast('Falha ao entrar: ' + msg, 'erro');
+    // Mensagem única de propósito: não revela se o e-mail existe, se a senha
+    // está errada ou se a conta ainda não foi confirmada (evita enumeração).
+    console.warn('[SolitudeScan] Falha de login:', error.message);
+    mostrarToast('Não foi possível entrar. Confira e-mail e senha. Se você acabou de se cadastrar, confirme o e-mail antes de entrar.', 'erro', 7000);
     return;
   }
 
@@ -366,7 +366,8 @@ async function executarCadastro(e) {
 
   const { data, error } = await AppState.supabase.auth.signUp({ email, password: senha });
   if (error) {
-    mostrarToast('Erro no cadastro: ' + error.message, 'erro');
+    console.warn('[SolitudeScan] Falha no cadastro:', error.message);
+    mostrarToast('Não foi possível criar a conta. Se este e-mail já estiver cadastrado, use "Entrar" ou recupere a senha.', 'erro', 7000);
     return;
   }
 
@@ -2250,18 +2251,39 @@ async function gerarCobrancaPix(e) {
   }
 
   const expiraEm = new Date(Date.now() + CONFIG.TEMPO_PIX_SEGUNDOS * 1000).toISOString();
+  // O valor, o dono e o status da cobrança são definidos pelo banco
+  // (trigger enforce_payment_request_insert). O navegador nunca decide o preço.
   const { data, error } = await AppState.supabase.from('payment_requests').insert([{
-    nome, email, plano, valor, metodo: 'pix', status: 'pendente',
-    expires_at: expiraEm, user_id: AppState.usuario.id || null
+    nome, email, plano, metodo: 'pix', status: 'pendente', expires_at: expiraEm
   }]).select().single();
 
   if (error || !data) {
     console.warn('[SolitudeScan] Erro ao registrar solicitação:', error);
-    mostrarToast('Não foi possível gerar a cobrança. Tente novamente.', 'erro');
+    const detalhe = String((error && error.message) || '');
+    let msg = 'Não foi possível gerar a cobrança. Tente novamente.';
+    if (/muitas solicitacoes/i.test(detalhe)) {
+      msg = 'Você já gerou várias cobranças em pouco tempo. Aguarde alguns minutos e tente de novo.';
+    } else if (/plano invalido/i.test(detalhe)) {
+      msg = 'Este plano não está disponível no momento. Recarregue a página e escolha novamente.';
+    } else if (/e-mail invalido/i.test(detalhe)) {
+      msg = 'Informe um e-mail válido para receber a ativação do VIP.';
+    }
+    mostrarToast(msg, 'erro', 7000);
     return;
   }
 
-  AppState.pix.solicitacaoAtual = { id: data.id, nome, email, expiraEm, plano, valor };
+  const valorCobrado = Number(data.valor);
+  const planoFinal = data.plano || plano;
+  const expiraFinal = data.expires_at || expiraEm;
+  const emailFinal = data.email || email;
+  if (Number.isFinite(valorCobrado) && Math.abs(valorCobrado - valor) > 0.001) {
+    console.info('[SolitudeScan] Preço confirmado pelo servidor:', valorCobrado);
+  }
+  AppState.pix.solicitacaoAtual = {
+    id: data.id, nome, email: emailFinal, expiraEm: expiraFinal, plano: planoFinal, valor: valorCobrado
+  };
+  const detalhePlano = document.getElementById('pixDetalhePlano');
+  if (detalhePlano) detalhePlano.textContent = planoFinal + ' — ' + formatarMoeda(valorCobrado);
   document.getElementById('pixPassoDados').style.display = 'none';
   document.getElementById('pixPassoPagamento').style.display = 'block';
   iniciarTimerPix();
@@ -2920,10 +2942,17 @@ function aprovarPagamento(pagamentoId) {
       try {
         const dias = CONFIG.PLANOS_DURACAO[pag.plano] || 30;
         const expiraEm = new Date(Date.now() + dias * 86400000).toISOString();
-        let consulta = AppState.supabase.from('profiles').update({ is_vip: true, vip_plan: pag.plano, vip_expires_at: expiraEm });
+        let consulta = AppState.supabase
+          .from('profiles')
+          .update({ is_vip: true, vip_plan: pag.plano, vip_expires_at: expiraEm })
+          .select('id');
         consulta = pag.user_id ? consulta.eq('id', pag.user_id) : consulta.eq('email', pag.email);
-        const { error: erroPerfil } = await consulta;
+        const { data: perfis, error: erroPerfil } = await consulta;
         if (erroPerfil) throw erroPerfil;
+        // Sem isso, a aprovação "passava" mesmo sem nenhum perfil atualizado.
+        if (!perfis || !perfis.length) {
+          throw new Error('Nenhum perfil encontrado para ' + pag.email + '. Peça para o leitor criar a conta antes de aprovar o Pix.');
+        }
 
         const { error } = await AppState.supabase.from('payment_requests')
           .update({ status: 'aprovado', approved_at: new Date().toISOString() }).eq('id', pagamentoId);
