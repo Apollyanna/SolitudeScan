@@ -1249,3 +1249,16 @@ html.light .reader-modal, html.light .reader-content { background: #f7f5fa; }
     scroll-behavior: auto !important;
   }
 }
+
+/* Rodapé em colunas */
+.footer-col { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.footer-col h4 { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto-2); }
+.footer-col a { font-size: 0.85rem; color: var(--texto-3); text-decoration: none; transition: color var(--trans); }
+.footer-col a:hover { color: var(--rosa-claro); }
+@media (max-width: 900px) {
+  .footer-content { grid-template-columns: 1fr 1fr; gap: 22px; }
+  .footer-brand { grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+  .footer-content { grid-template-columns: 1fr; }
+}
