@@ -70,9 +70,10 @@ group by b.id
 order by politicas_storage asc;
 
 -- 8) Últimos eventos de segurança registrados (se a migração nova já foi aplicada).
-select criado_em, evento, ator_id, detalhe
+-- Colunas reais: created_at, event, user_id, detail.
+select created_at, event, user_id, detail
 from public.security_events
-order by criado_em desc
+order by created_at desc
 limit 20;
 
 -- 9) Pagamentos pendentes antigos (possível acúmulo de fraude/tentativa).
@@ -82,6 +83,7 @@ group by status
 order by total desc;
 
 -- 10) Confirma que preços vêm do banco (não do navegador).
-select plano, preco_centavos, duracao_dias, ativo
+-- Colunas reais: plan, amount_cents, duration_days, active.
+select plan, amount_cents, duration_days, active
 from public.plan_prices
-order by plano;
+order by plan;
