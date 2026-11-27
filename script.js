@@ -3432,7 +3432,7 @@ async function rodarTestesSolitude() {
   ['mangaContainer', 'toastContainer', 'heroTrack', 'tendenciasContainer', 'rankingContainer', 'continueLendoContainer',
     'readerCascataContainer', 'detalhesModal', 'readerModal', 'loginModal', 'registerModal', 'pixModal', 'adminModal',
     'searchInput', 'listaCapitulosContainer', 'btnFavoritar', 'admPaginasArquivo', 'cookieBanner', 'skipLink',
-    'generoFiltro', 'statusFiltro', 'ordemFiltro', 'themeToggleBtn', 'loggedOutView', 'loggedInView',
+    'tipoChips', 'demografiaChips', 'statusFiltro', 'ordemFiltro', 'adultoFiltro', 'themeToggleBtn', 'loggedOutView', 'loggedInView',
     'adminObraFormModal', 'adminCapituloFormModal', 'adminPaginasModal'
   ].forEach(id => teste('Elemento #' + id, document.getElementById(id)));
 

@@ -16,6 +16,7 @@
 
   var sugestaoAtiva = -1;
   var iniciado = false;
+  var buscaIniciada = false;
 
   /* ---------------------------------------------------------------- apoio */
 
@@ -638,8 +639,10 @@
   /* ------------------------------------------------------------ inicialização */
 
   function inicializarBusca() {
+    if (buscaIniciada) return;
     var input = document.getElementById('searchInput');
     if (!input) return;
+    buscaIniciada = true;
 
     var buscar = (typeof debounce === 'function')
       ? debounce(function (valor) {
