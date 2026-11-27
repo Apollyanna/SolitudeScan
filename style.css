@@ -2581,3 +2581,16 @@ ins.adsbygoogle,
   background: var(--danger, #e5484d);
   border-color: transparent;
 }
+
+/* Codigo do erro na pagina 404 */
+.error-code {
+  margin: 0;
+  font-size: clamp(48px, 12vw, 84px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, var(--rosa, #ec4899), var(--roxo, #8b5cf6));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
