@@ -187,25 +187,41 @@
 
   function injetarNavegacao() {
     var nav = document.querySelector('.nav-links') || document.querySelector('.navbar') || document.querySelector('nav');
-    if (!nav || document.getElementById('pfNavPainel')) return;
 
-    if (PF.ehStaff()) {
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.id = 'pfNavPainel';
-      b.className = 'nav-link pf-nav-btn';
-      b.textContent = 'Painel';
-      b.addEventListener('click', function () { PF.abrirPainel(); });
-      nav.appendChild(b);
+    if (nav) {
+      if (PF.ehStaff() && !nav.querySelector('.pf-nav-painel')) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'nav-link pf-nav-btn pf-nav-painel';
+        b.textContent = 'Painel';
+        b.addEventListener('click', function () { PF.abrirPainel(); });
+        nav.appendChild(b);
+      }
+
+      if (!nav.querySelector('.pf-nav-suporte')) {
+        var s = document.createElement('a');
+        s.className = 'nav-link pf-nav-suporte';
+        s.href = '#';
+        s.textContent = 'Suporte';
+        s.setAttribute('aria-label', 'Suporte');
+        s.addEventListener('click', function (ev) { ev.preventDefault(); PF.abrirSuporte(); });
+        nav.appendChild(s);
+      }
     }
 
-    var s = document.createElement('a');
-    s.id = 'pfNavSuporte';
-    s.className = 'nav-link';
-    s.href = '#';
-    s.textContent = 'Suporte';
-    s.addEventListener('click', function (ev) { ev.preventDefault(); PF.abrirSuporte(); });
-    nav.appendChild(s);
+    /* Menu inferior (mobile): o Suporte também precisa ser alcançável no celular. */
+    var inferior = document.querySelector('.bottom-nav');
+    if (inferior && !inferior.querySelector('.pf-nav-suporte')) {
+      var m = document.createElement('button');
+      m.type = 'button';
+      m.className = 'nav-item pf-nav-suporte';
+      m.setAttribute('aria-label', 'Suporte');
+      m.innerHTML = '<i class="fa-solid fa-headset" aria-hidden="true"></i><span>Suporte</span>';
+      m.addEventListener('click', function () { PF.abrirSuporte(); });
+      var admin = inferior.querySelector('#btnAdminNav');
+      if (admin) inferior.insertBefore(m, admin);
+      else inferior.appendChild(m);
+    }
   }
 
   /* ------------------------------------------------------------------ */
