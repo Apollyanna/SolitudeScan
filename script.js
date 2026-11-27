@@ -1464,12 +1464,97 @@ async function carregarPaginasCapitulo(capituloId) {
     ).join('');
     container.scrollTop = 0;
     window.scrollTo({ top: 0 });
+
+    prepararImagensLeitor(container);
+    preCarregarPaginas(paginas);
+    garantirBarraProgressoLeitor();
+    atualizarProgressoLeitor();
+    if (container.dataset.progressoVinculado !== '1') {
+      container.dataset.progressoVinculado = '1';
+      container.addEventListener('scroll', atualizarProgressoLeitor, { passive: true });
+      window.addEventListener('scroll', atualizarProgressoLeitor, { passive: true });
+      window.addEventListener('resize', atualizarProgressoLeitor, { passive: true });
+    }
   } catch (err) {
     console.error('[SolitudeScan] Erro ao carregar páginas:', err);
     if (carga === AppState.leitor.cargaId) {
       container.innerHTML = '<div class="reader-error"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><p>Falha ao carregar as páginas. Tente novamente.</p></div>';
     }
   }
+}
+
+/* ==========================================================================
+   Leitor: pré-carga, tratamento de imagens e progresso de leitura
+   ========================================================================== */
+
+function prepararImagensLeitor(container) {
+  container.querySelectorAll('img.reader-page').forEach(img => {
+    img.addEventListener('error', () => {
+      const tentativas = Number(img.dataset.tentativas || 0);
+      const origem = img.getAttribute('src') || '';
+      if (tentativas < 1 && origem) {
+        img.dataset.tentativas = String(tentativas + 1);
+        const base = origem.split(/[?&]r=/)[0];
+        img.src = base + (base.includes('?') ? '&' : '?') + 'r=' + Date.now();
+        return;
+      }
+      const aviso = document.createElement('div');
+      aviso.className = 'reader-page-error';
+      aviso.innerHTML = '<i class="fa-solid fa-image" aria-hidden="true"></i>' +
+        '<p>Não foi possível carregar a página ' + escaparHtml(img.dataset.page || '') + '.</p>' +
+        '<button type="button" class="btn-secondary small">Tentar novamente</button>';
+      const botao = aviso.querySelector('button');
+      if (botao) {
+        botao.addEventListener('click', () => {
+          img.dataset.tentativas = '0';
+          aviso.replaceWith(img);
+          img.src = origem;
+        });
+      }
+      img.replaceWith(aviso);
+    });
+  });
+}
+
+function preCarregarPaginas(paginas) {
+  if (!Array.isArray(paginas) || paginas.length < 4) return;
+  paginas.slice(3, 8).forEach(pagina => {
+    if (!pagina || !pagina.signed_url) return;
+    const preload = new Image();
+    preload.decoding = 'async';
+    preload.src = pagina.signed_url;
+  });
+}
+
+function garantirBarraProgressoLeitor() {
+  const modal = document.getElementById('readerModal');
+  if (!modal) return;
+  if (document.getElementById('readerProgressBar')) return;
+  const barra = document.createElement('div');
+  barra.id = 'readerProgressBar';
+  barra.className = 'reader-progress';
+  barra.setAttribute('role', 'progressbar');
+  barra.setAttribute('aria-label', 'Progresso de leitura do capítulo');
+  barra.setAttribute('aria-valuemin', '0');
+  barra.setAttribute('aria-valuemax', '100');
+  barra.setAttribute('aria-valuenow', '0');
+  barra.innerHTML = '<span id="readerProgressFill" class="reader-progress-fill"></span>';
+  modal.appendChild(barra);
+}
+
+function atualizarProgressoLeitor() {
+  const barra = document.getElementById('readerProgressBar');
+  const fill = document.getElementById('readerProgressFill');
+  const container = document.getElementById('readerCascataContainer');
+  if (!barra || !fill) return;
+  const rolavel = container && container.scrollHeight > container.clientHeight + 4 ? container : null;
+  const topo = rolavel ? rolavel.scrollTop : (window.scrollY || 0);
+  const total = rolavel
+    ? rolavel.scrollHeight - rolavel.clientHeight
+    : (document.documentElement.scrollHeight - window.innerHeight);
+  const pct = total > 0 ? Math.min(100, Math.max(0, Math.round((topo / total) * 100))) : 0;
+  fill.style.width = pct + '%';
+  barra.setAttribute('aria-valuenow', String(pct));
 }
 
 function resetarZoomLeitor() {

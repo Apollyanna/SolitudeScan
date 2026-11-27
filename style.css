@@ -1262,3 +1262,24 @@ html.light .reader-modal, html.light .reader-content { background: #f7f5fa; }
 @media (max-width: 560px) {
   .footer-content { grid-template-columns: 1fr; }
 }
+
+/* Leitor: progresso e falha de imagem */
+.reader-progress {
+  position: fixed; left: 0; right: 0; bottom: 0; height: 3px; z-index: 1200;
+  background: rgba(255, 255, 255, 0.08); pointer-events: none;
+}
+.reader-progress-fill {
+  display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--primaria), var(--rosa-claro));
+  transition: width 120ms linear;
+}
+.reader-page-error {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  margin: 14px auto; padding: 26px 18px; max-width: 520px; text-align: center;
+  background: var(--fundo-card); border: 1px dashed var(--borda); border-radius: var(--r-md);
+  color: var(--texto-2); font-size: 0.88rem;
+}
+.reader-page-error i { font-size: 1.5rem; color: var(--texto-3); }
+@media (max-width: 560px) {
+  .reader-page-error { margin: 10px 0; padding: 20px 14px; }
+}
