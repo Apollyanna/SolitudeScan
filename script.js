@@ -427,8 +427,74 @@ async function executarCadastro(e) {
   }
 }
 
-async function fazerLogout() {
-  if (AppState.supabase) {
+function abrirRecuperacaoSenha() {
+  toggleModal('loginModal', false);
+  const destino = document.getElementById('resetEmail');
+  const origem = document.getElementById('loginEmail');
+  if (destino && origem && origem.value) destino.value = origem.value.trim();
+  toggleModal('resetModal', true);
+}
+
+async function executarRecuperacaoSenha(e) {
+  e.preventDefault();
+  const email = document.getElementById('resetEmail').value.trim();
+  if (!validarEmail(email)) {
+    mostrarToast('Digite um e-mail válido para receber o link.', 'alerta');
+    return;
+  }
+  if (!AppState.supabase) {
+    mostrarToast('Sistema offline. Tente novamente em instantes.', 'erro');
+    return;
+  }
+  try {
+    const { error } = await AppState.supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+    if (error) console.warn('[SolitudeScan] Recuperação de senha:', error.message);
+  } catch (err) {
+    console.warn('[SolitudeScan] Recuperação de senha:', err && err.message);
+  }
+  // Resposta sempre neutra: não confirma se o e-mail existe (evita enumeração).
+  toggleModal('resetModal', false);
+  mostrarToast('Se este e-mail estiver cadastrado, enviamos um link para criar uma nova senha. Confira também a caixa de spam.', 'sucesso', 9000);
+}
+
+async function executarNovaSenha(e) {
+  e.preventDefault();
+  const senha = document.getElementById('novaSenha').value;
+  const conf = document.getElementById('novaSenhaConf').value;
+  if (!validarSenhaForte(senha)) {
+    mostrarToast('Senha fraca! Use no mínimo 8 caracteres com letras, números e um símbolo.', 'alerta');
+    return;
+  }
+  if (senha !== conf) {
+    mostrarToast('As senhas digitadas não coincidem.', 'alerta');
+    return;
+  }
+  if (!AppState.supabase) {
+    mostrarToast('Sistema offline. Tente novamente em instantes.', 'erro');
+    return;
+  }
+  try {
+    const { error } = await AppState.supabase.auth.updateUser({ password: senha });
+    if (error) {
+      console.warn('[SolitudeScan] Falha ao redefinir senha:', error.message);
+      mostrarToast('Não foi possível salvar a nova senha. O link pode ter expirado: solicite outro.', 'erro', 7000);
+      return;
+    }
+  } catch (err) {
+    console.warn('[SolitudeScan] Falha ao redefinir senha:', err && err.message);
+    mostrarToast('Não foi possível salvar a nova senha. Tente novamente.', 'erro', 7000);
+    return;
+  }
+  document.getElementById('novaSenha').value = '';
+  document.getElementById('novaSenhaConf').value = '';
+  toggleModal('novaSenhaModal', false);
+  if (window.history && history.replaceState) history.replaceState(null, '', window.location.pathname);
+  mostrarToast('Senha atualizada! Agora entre com a nova senha.', 'sucesso', 8000);
+}
+
+async function fazerLogout() {  if (AppState.supabase) {
     try { await AppState.supabase.auth.signOut(); } catch (e) {}
   }
   Object.assign(AppState.usuario, {
@@ -1620,6 +1686,10 @@ function ativarSincronizacaoSessao() {
         atualizarVisibilidadeAdmin();
       } else if ((evento === 'SIGNED_IN' || evento === 'TOKEN_REFRESHED') && sessao && sessao.user && !AppState.usuario.logado) {
         setTimeout(verificarSessaoSupabase, 0);
+      } else if (evento === 'PASSWORD_RECOVERY') {
+        toggleModal('loginModal', false);
+        toggleModal('resetModal', false);
+        toggleModal('novaSenhaModal', true);
       }
     });
   } catch (e) {}

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#ec4899">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' https: data: blob:; media-src 'self' https: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' https: data: blob:; media-src 'self' https: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
 
 <title>SolitudeScan | Leia Manhwas, Mangás e Manhuás Online</title>
 <meta name="description" content="Leia manhwas, mangás e manhuás online com experiência de leitura profissional, rápida e segura. Atualizações diárias e catálogo exclusivo.">
@@ -258,6 +258,7 @@
     <form id="loginForm" onsubmit="executarLoginCustom(event)" class="modal-form">
       <div class="form-group"><label for="loginEmail">E-mail</label><input type="email" id="loginEmail" required autocomplete="email"></div>
       <div class="form-group"><label for="loginSenha">Senha</label><input type="password" id="loginSenha" required autocomplete="current-password"></div>
+      <p class="modal-footer-text" style="text-align:right; margin-top:-4px;"><a href="#" onclick="abrirRecuperacaoSenha(); return false;">Esqueci minha senha</a></p>
       <button type="submit" class="btn-primary full-width">Entrar</button>
       <p class="modal-footer-text">Não tem conta? <a href="#" onclick="abrirCadastro(); return false;">Cadastre-se</a></p>
     </form>
@@ -279,6 +280,38 @@
       <div class="form-group"><label for="regSenhaConf">Confirmar Senha</label><input type="password" id="regSenhaConf" required autocomplete="new-password" minlength="8"></div>
       <button type="submit" class="btn-primary full-width">Cadastrar</button>
       <p class="modal-footer-text">Já tem conta? <a href="#" onclick="fazerLogin(); return false;">Faça login</a></p>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetModalTitle">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="resetModalTitle"><i class="fa-solid fa-key" style="color:var(--primaria);" aria-hidden="true"></i> Recuperar Senha</h3>
+      <button type="button" class="close-btn" onclick="toggleModal('resetModal')" aria-label="Fechar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <form id="resetForm" onsubmit="executarRecuperacaoSenha(event)" class="modal-form">
+      <p class="modal-footer-text" style="text-align:left;">Informe o e-mail da sua conta. Enviaremos um link seguro, válido por tempo limitado, para você criar uma nova senha.</p>
+      <div class="form-group"><label for="resetEmail">E-mail</label><input type="email" id="resetEmail" required autocomplete="email"></div>
+      <button type="submit" class="btn-primary full-width">Enviar link de recuperação</button>
+      <p class="modal-footer-text">Lembrou a senha? <a href="#" onclick="fazerLogin(); return false;">Voltar ao login</a></p>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="novaSenhaModal" role="dialog" aria-modal="true" aria-labelledby="novaSenhaModalTitle">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="novaSenhaModalTitle"><i class="fa-solid fa-lock" style="color:var(--primaria);" aria-hidden="true"></i> Criar Nova Senha</h3>
+      <button type="button" class="close-btn" onclick="toggleModal('novaSenhaModal')" aria-label="Fechar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <form id="novaSenhaForm" onsubmit="executarNovaSenha(event)" class="modal-form">
+      <div class="form-group">
+        <label for="novaSenha">Nova senha</label>
+        <input type="password" id="novaSenha" required autocomplete="new-password" minlength="8" pattern="(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}" title="Mínimo 8 caracteres, com letras, números e um símbolo" placeholder="Mínimo 8 caracteres, letras, números e símbolo">
+      </div>
+      <div class="form-group"><label for="novaSenhaConf">Confirmar nova senha</label><input type="password" id="novaSenhaConf" required autocomplete="new-password" minlength="8"></div>
+      <button type="submit" class="btn-primary full-width">Salvar nova senha</button>
     </form>
   </div>
 </div>
