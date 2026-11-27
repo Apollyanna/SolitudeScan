@@ -156,7 +156,9 @@ for update to authenticated
 using (id = auth.uid() or public.is_admin())
 with check (id = auth.uid() or public.is_admin());
 
--- Public chapter/page access requires the parent work to be published too.
+-- Public chapter access requires the parent work to be published AND the
+-- chapter to be free (or the reader to have an active VIP). VIP is enforced
+-- here, in the database; localStorage never grants access.
 drop policy if exists solitude_chapters_public_read on public.chapters;
 create policy solitude_chapters_public_read
 on public.chapters
@@ -169,6 +171,15 @@ using (
       where w.id = chapters.work_id
         and w.is_published = true
         and w.deleted_at is null
+    )
+    and (
+      coalesce(is_vip, false) = false
+      or exists (
+        select 1 from public.profiles p
+        where p.id = auth.uid()
+          and p.is_vip = true
+          and (p.vip_expires_at is null or p.vip_expires_at > now())
+      )
     )
   )
   or public.is_admin()
@@ -188,6 +199,15 @@ using (
         and c.is_published = true
         and w.is_published = true
         and w.deleted_at is null
+        and (
+          coalesce(c.is_vip, false) = false
+          or exists (
+            select 1 from public.profiles p
+            where p.id = auth.uid()
+              and p.is_vip = true
+              and (p.vip_expires_at is null or p.vip_expires_at > now())
+          )
+        )
     )
   )
   or public.is_admin()

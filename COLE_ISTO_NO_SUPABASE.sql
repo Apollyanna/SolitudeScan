@@ -118,10 +118,13 @@ where w.id in (
 )
 on conflict (work_id, chapter_number) do nothing;
 
+-- SEGURANCA: NUNCA promova admin por padrao de e-mail.
+-- Antes, qualquer pessoa podia se cadastrar com um e-mail contendo
+-- "isabella" ou "solitude" e virava administrador do site.
+-- Apenas o ID do dono do projeto recebe admin.
 update public.profiles
 set is_admin = true, role = 'admin'
-where email ilike '%isabella%' or email ilike '%solitude%'
-   or id = 'd4618bc4-518d-472a-99e0-647520435092';
+where id = 'd4618bc4-518d-472a-99e0-647520435092';
 
 select
   (select count(*) from public.works where is_published = true) as obras_publicadas,
