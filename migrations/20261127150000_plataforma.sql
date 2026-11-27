@@ -459,8 +459,53 @@ create policy works_cooperador_insert on public.works
   for insert to authenticated
   with check (
     public.eh_admin()
-    or (public.eh_staff() and submitted_by = auth.uid() and coalesce(approval_status, 'pendente') = 'pendente')
+    or (public.eh_staff() and submitted_by = auth.uid()
+        and coalesce(approval_status, 'pendente') in ('pendente', 'rascunho'))
   );
+
+-- O cooperador precisa enxergar as próprias obras enquanto estão em análise.
+-- Políticas permissivas são somadas: esta apenas amplia a visibilidade dele.
+drop policy if exists works_owner_select on public.works;
+create policy works_owner_select on public.works
+  for select to authenticated using (submitted_by = auth.uid() or public.eh_admin());
+
+-- Páginas de capítulo: staff grava apenas em obras que administra.
+do $$
+begin
+  if exists (select 1 from information_schema.tables
+             where table_schema = 'public' and table_name = 'pages')
+     and exists (select 1 from information_schema.columns
+                 where table_schema = 'public' and table_name = 'pages' and column_name = 'chapter_id') then
+
+    drop policy if exists pages_staff_insert on public.pages;
+    create policy pages_staff_insert on public.pages
+      for insert to authenticated
+      with check (
+        public.eh_admin() or exists (
+          select 1 from public.chapters c
+          where c.id = chapter_id and public.pode_gerir_obra(c.work_id)
+        )
+      );
+
+    drop policy if exists pages_staff_update on public.pages;
+    create policy pages_staff_update on public.pages
+      for update to authenticated
+      using (
+        public.eh_admin() or exists (
+          select 1 from public.chapters c
+          where c.id = chapter_id and public.pode_gerir_obra(c.work_id)
+        )
+      )
+      with check (
+        public.eh_admin() or exists (
+          select 1 from public.chapters c
+          where c.id = chapter_id and public.pode_gerir_obra(c.work_id)
+        )
+      );
+  else
+    raise notice 'tabela pages ausente ou sem chapter_id: políticas de páginas não criadas';
+  end if;
+end $$;
 
 drop policy if exists works_cooperador_update on public.works;
 create policy works_cooperador_update on public.works
@@ -650,8 +695,10 @@ begin
     insert into storage.buckets (id, name, public)
     values ('avatars', 'avatars', true)
     on conflict (id) do nothing;
+    -- Bucket de páginas público: o leitor usa a URL gravada na tabela pages.
+    -- Se já existir, a configuração atual é preservada.
     insert into storage.buckets (id, name, public)
-    values ('pages', 'pages', false)
+    values ('pages', 'pages', true)
     on conflict (id) do nothing;
   end if;
 end $$;
