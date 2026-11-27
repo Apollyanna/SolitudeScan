@@ -2156,6 +2156,9 @@ async function removerObraDaLista(obraId, listaId) {
   lista.work_ids = (lista.work_ids || []).filter(id => id !== String(obraId));
   await salvarListas();
   mostrarToast('Obra removida da lista.', 'info');
+  renderizarListas();
+  const modal = document.getElementById('listaObrasModal');
+  if (modal && modal.classList.contains('active')) verLista(listaId);
 }
 
 function abrirAdicionarLista() {
