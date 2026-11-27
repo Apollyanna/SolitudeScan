@@ -1,9 +1,0 @@
-{
-  "name": "solitudescan",
-  "version": "1.0.0",
-  "private": true,
-  "description": "SolitudeScan - site estatico (serve.py) + validacao dos scripts SQL do Supabase",
-  "scripts": {
-    "test": "python3 -m pytest tests/ -q"
-  }
-}
