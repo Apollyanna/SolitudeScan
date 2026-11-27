@@ -82,6 +82,46 @@ create index if not exists payment_requests_email_idx
 
 
 -- ============================================================================
+-- 2.5 Listas pessoais: o app grava user_lists(name, description, is_default)
+--     e user_list_items(list_id, work_id, position). As políticas da seção 5
+--     leem is_public, então a coluna precisa existir ANTES delas.
+create table if not exists public.user_lists (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  name text not null check (char_length(btrim(name)) between 1 and 50),
+  description text,
+  is_default boolean not null default false,
+  is_public boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table if exists public.user_lists
+  add column if not exists description text,
+  add column if not exists is_default boolean not null default false,
+  add column if not exists is_public boolean not null default false,
+  add column if not exists created_at timestamptz not null default now();
+
+create table if not exists public.user_list_items (
+  id uuid primary key default gen_random_uuid(),
+  list_id uuid not null references public.user_lists (id) on delete cascade,
+  work_id uuid not null,
+  position integer not null default 0,
+  status text not null default 'planejado',
+  added_at timestamptz not null default now(),
+  constraint user_list_items_list_work_key unique (list_id, work_id)
+);
+
+alter table if exists public.user_list_items
+  add column if not exists position integer not null default 0,
+  add column if not exists status text not null default 'planejado',
+  add column if not exists added_at timestamptz not null default now();
+
+create index if not exists user_lists_user_id_idx on public.user_lists (user_id);
+create index if not exists user_list_items_list_id_idx on public.user_list_items (list_id);
+
+grant select, insert, update, delete on public.user_lists to authenticated;
+grant select, insert, update, delete on public.user_list_items to authenticated;
+
 -- 3) PREÇOS OFICIAIS DOS PLANOS
 --    O preço vive no banco. O navegador não escolhe mais quanto pagar.
 -- ============================================================================
@@ -583,7 +623,7 @@ select public.ss_policy('notifications', 'notifications_insert_admin',
 select public.ss_policy('notifications', 'notifications_delete_admin',
   'for delete to authenticated using (public.is_admin())');
 
--- 5.12 Listas pessoais
+-- 5.12 Listas pessoais (tabelas e coluna is_public garantidas na seção 2.5)
 select public.ss_policy('user_lists', 'user_lists_select_own_or_public',
   'for select to authenticated using (user_id = auth.uid() or is_public)');
 select public.ss_policy('user_lists', 'user_lists_insert_own',
