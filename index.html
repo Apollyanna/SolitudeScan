@@ -74,7 +74,9 @@
 
   <div class="nav-search">
     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-    <input type="search" id="searchInput" class="search-input" placeholder="Buscar obras..." aria-label="Buscar obras" autocomplete="off" enterkeyhint="search">
+    <input type="search" id="searchInput" class="search-input" placeholder="Buscar por título, autor ou gênero" aria-label="Buscar obras" autocomplete="off" enterkeyhint="search" role="combobox" aria-expanded="false" aria-controls="searchSuggestions" aria-autocomplete="list">
+    <button type="button" class="search-clear" id="searchClearBtn" aria-label="Limpar busca" hidden>&times;</button>
+    <div id="searchSuggestions" class="search-suggestions" role="listbox" aria-label="Sugestões de busca" hidden></div>
   </div>
 
   <div class="notif-wrapper">
@@ -131,29 +133,53 @@
           <h2 class="section-title" id="tituloUltimas">Últimas atualizações</h2>
           <p class="section-sub">Capítulos publicados recentemente</p>
         </div>
-        <button type="button" class="section-link" onclick="focarCatalogo()">Explorar catálogo <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+        <button type="button" class="section-link" onclick="focarCatalogo()">Explorar catálogo</button>
       </div>
 
-      <div class="catalog-toolbar" role="group" aria-label="Filtros do catálogo">
-        <select id="generoFiltro" class="filter-select" aria-label="Filtrar por gênero">
-          <option value="Todos">Todos os Gêneros</option>
-        </select>
-        <select id="statusFiltro" class="filter-select" aria-label="Filtrar por status">
-          <option value="Todos">Todos os Status</option>
-          <option value="Em Lançamento">Em Lançamento</option>
-          <option value="Completo">Completo</option>
-          <option value="Hiato">Hiato</option>
-        </select>
-        <select id="ordemFiltro" class="filter-select" aria-label="Ordenar por">
-          <option value="recentes">Mais Recentes</option>
-          <option value="populares">Mais Populares</option>
-          <option value="avaliados">Melhor Avaliados</option>
-        </select>
+      <div class="catalog-filters" role="group" aria-label="Filtros do catálogo">
+        <div class="filter-row">
+          <span class="filter-label">Tipo</span>
+          <div id="tipoChips" class="filter-chips" role="group" aria-label="Filtrar por tipo"></div>
+        </div>
+        <div class="filter-row">
+          <span class="filter-label">Demografia</span>
+          <div id="demografiaChips" class="filter-chips" role="group" aria-label="Filtrar por demografia"></div>
+        </div>
+        <div class="filter-row">
+          <span class="filter-label">Gêneros</span>
+          <div id="generoChips" class="filter-chips" role="group" aria-label="Filtrar por gênero"></div>
+        </div>
+        <div class="filter-selects">
+          <select id="statusFiltro" aria-label="Filtrar por status">
+            <option value="Todos">Todos os status</option>
+            <option value="Em Lançamento">Em andamento</option>
+            <option value="Completo">Finalizado</option>
+            <option value="Hiato">Em hiato</option>
+            <option value="Cancelado">Cancelado</option>
+          </select>
+          <select id="ordemFiltro" aria-label="Ordenar por">
+            <option value="atualizados">Últimas atualizações</option>
+            <option value="populares">Mais populares</option>
+            <option value="recentes">Mais recentes</option>
+            <option value="avaliados">Melhor avaliados</option>
+            <option value="titulo">Ordem alfabética</option>
+            <option value="capitulos">Mais capítulos</option>
+          </select>
+          <label class="filter-toggle"><input type="checkbox" id="adultoFiltro"> Conteúdo +18</label>
+          <div class="filter-actions">
+            <span id="catalogResultCount" class="catalog-count" aria-live="polite"></span>
+            <button type="button" class="btn-link" onclick="limparFiltros()">Limpar filtros</button>
+          </div>
+        </div>
       </div>
 
-      <div id="generoChips" class="genre-chips" role="group" aria-label="Filtrar por gênero"></div>
+      <div id="filtrosAtivos" class="active-filters" hidden></div>
 
       <div id="mangaContainer" class="manga-grid" role="list" aria-live="polite"></div>
+
+      <div class="catalog-more">
+        <button type="button" class="btn-carregar-mais" id="btnCarregarMais" onclick="carregarMaisResultados()" hidden>Carregar mais obras</button>
+      </div>
     </section>
 
     <section class="catalog-section" aria-labelledby="tituloTendencias">
