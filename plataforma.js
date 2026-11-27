@@ -41,12 +41,22 @@
   /* Utilidades                                                          */
   /* ------------------------------------------------------------------ */
 
-  function sb() {
-    if (window.AppState && AppState.supabase) return AppState.supabase;
+  function appState() {
     try {
-      if (window.supabase && typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_URL) {
-        AppState.supabase = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-        return AppState.supabase;
+      if (typeof AppState !== 'undefined' && AppState) return AppState;
+    } catch (e) { /* declarado em outro escopo */ }
+    return window.AppState || null;
+  }
+
+  function sb() {
+    var A = appState();
+    if (A && A.supabase) return A.supabase;
+    try {
+      var cfg = (typeof CONFIG !== 'undefined' && CONFIG) ? CONFIG : null;
+      if (window.supabase && cfg && cfg.SUPABASE_URL) {
+        var cli = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+        if (A) A.supabase = cli;
+        return cli;
       }
     } catch (e) { /* sem cliente disponível */ }
     return null;
@@ -1272,11 +1282,16 @@
   /* Progresso de leitura persistente                                   */
   /* ------------------------------------------------------------------ */
 
-  PF.registrarProgresso = async function (obraId, capituloId, pagina, total, numeroCap) {
+  PF.registrarProgresso = async function (obraId, capituloId, pagina, total, numeroCap, percentual) {
     if (!obraId || !ESTADO.usuario) return { ok: false, motivo: 'sem_sessao' };
     var pag = Math.max(1, Number(pagina) || 1);
     var tot = Number(total) || null;
-    var pct = tot ? Math.min(100, Math.round((pag / tot) * 10000) / 100) : 0;
+    var pct;
+    if (percentual !== null && percentual !== undefined && !isNaN(Number(percentual))) {
+      pct = Math.min(100, Math.max(0, Math.round(Number(percentual) * 100) / 100));
+    } else {
+      pct = tot ? Math.min(100, Math.round((pag / tot) * 10000) / 100) : 0;
+    }
 
     var payload = {
       user_id: ESTADO.usuario.id,
@@ -1309,14 +1324,76 @@
     return res.data;
   };
 
-  function extrairLeituraAtual(obraId) {
-    var L = (window.AppState && AppState.leitor) || {};
-    var cap = L.capituloId || L.chapterId || L.capitulo || null;
-    var pag = L.pagina || L.page || L.currentPage || 1;
-    var tot = L.totalPaginas || L.totalPages || L.total || null;
-    var num = L.numeroCapitulo || L.chapterNumber || null;
-    return { obraId: obraId, capituloId: cap, pagina: pag, total: tot, numero: num };
+  function percentualRolagem() {
+    var container = document.getElementById('readerCascataContainer');
+    var rolavel = container && container.scrollHeight > container.clientHeight + 4 ? container : null;
+    var topo = rolavel ? rolavel.scrollTop : (window.scrollY || 0);
+    var total = rolavel
+      ? rolavel.scrollHeight - rolavel.clientHeight
+      : (document.documentElement.scrollHeight - window.innerHeight);
+    if (!total || total <= 0) return 0;
+    return Math.min(100, Math.max(0, Math.round((topo / total) * 10000) / 100));
   }
+
+  /* Lê o estado real do leitor (AppState.leitor) sem inventar capítulo ou página. */
+  function extrairLeituraAtual(obraId) {
+    var A = appState();
+    var L = (A && A.leitor) || {};
+    var obra = obraId || L.obraAtualId || null;
+    var cap = null;
+    if (L.capitulosObraAtual && L.capitulosObraAtual.length) {
+      cap = L.capitulosObraAtual[L.indiceCapituloAtual] || null;
+    }
+    var numero = null;
+    var capId = null;
+    if (cap) {
+      if (cap.numero !== undefined) numero = cap.numero;
+      else if (cap.number !== undefined) numero = cap.number;
+      else if (cap.chapter_number !== undefined) numero = cap.chapter_number;
+      capId = cap.id || null;
+    }
+    return {
+      obraId: obra,
+      capituloId: capId,
+      pagina: 1,
+      total: null,
+      numero: numero,
+      percentual: percentualRolagem()
+    };
+  }
+
+  /* Traz o progresso do Supabase para o histórico local, permitindo
+     “continuar lendo” em outro dispositivo com a mesma conta. */
+  PF.sincronizarHistorico = async function () {
+    if (!ESTADO.usuario || !sb()) return 0;
+    var res = await sb().from('reading_progress').select('*')
+      .eq('user_id', ESTADO.usuario.id).order('updated_at', { ascending: false }).limit(40);
+    if (res.error || !res.data) return 0;
+
+    var A = appState();
+    if (!A || !A.usuario) return 0;
+    var historico = Array.isArray(A.usuario.historico) ? A.usuario.historico.slice() : [];
+    var vistos = {};
+    historico.forEach(function (h) { vistos[String(h.obraId)] = true; });
+
+    var adicionados = 0;
+    res.data.forEach(function (p) {
+      if (!p.work_id) return;
+      var id = String(p.work_id);
+      if (vistos[id]) return;
+      historico.push({ obraId: id, capitulo: p.chapter_number || '1', data: p.updated_at });
+      vistos[id] = true;
+      adicionados++;
+    });
+    if (!adicionados) return 0;
+
+    historico.sort(function (a, b) { return new Date(b.data) - new Date(a.data); });
+    var limite = (typeof CONFIG !== 'undefined' && CONFIG.MAX_HISTORICO_ITEMS) || 30;
+    A.usuario.historico = historico.slice(0, limite);
+    try { localStorage.setItem('solitude_historico', JSON.stringify(A.usuario.historico)); } catch (e) { /* modo privado */ }
+    if (typeof window.renderizarContinueLendo === 'function') renderizarContinueLendo();
+    return adicionados;
+  };
 
   function engancharProgresso() {
     if (typeof window.salvarNoHistorico === 'function' && !window.salvarNoHistorico.__pf) {
@@ -1325,7 +1402,7 @@
         var r = orig.apply(this, arguments);
         try {
           var d = extrairLeituraAtual(obraId);
-          PF.registrarProgresso(d.obraId, d.capituloId, d.pagina, d.total, d.numero);
+          PF.registrarProgresso(d.obraId, d.capituloId, d.pagina, d.total, d.numero, d.percentual);
         } catch (e) { /* nunca bloqueia a leitura */ }
         return r;
       };
@@ -1339,11 +1416,12 @@
         try {
           if (ESTADO.timerProgresso) clearTimeout(ESTADO.timerProgresso);
           ESTADO.timerProgresso = setTimeout(function () {
-            var L = (window.AppState && AppState.leitor) || {};
-            var obraId = L.obraId || L.workId || null;
+            var A2 = appState();
+            var L = (A2 && A2.leitor) || {};
+            var obraId = L.obraAtualId || L.obraId || L.workId || null;
             if (!obraId) return;
             var d = extrairLeituraAtual(obraId);
-            PF.registrarProgresso(d.obraId, d.capituloId, d.pagina, d.total, d.numero);
+            PF.registrarProgresso(d.obraId, d.capituloId, d.pagina, d.total, d.numero, d.percentual);
           }, 2500);
         } catch (e) { /* silencioso */ }
         return r;
@@ -1405,6 +1483,7 @@
     atualizarBarraEmail();
     engancharProgresso();
     melhorarDropdownNotificacoes();
+    try { await PF.sincronizarHistorico(); } catch (e) { /* offline */ }
 
     if (sb()) {
       sb().auth.onAuthStateChange(function () {
