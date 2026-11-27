@@ -9,6 +9,15 @@
   var ASSINATURA_EOCD = 0x06054b50;
   var ASSINATURA_CENTRAL = 0x02014b50;
 
+  /* Aceita ArrayBuffer, Uint8Array ou Buffer (Node) e devolve ArrayBuffer. */
+  function paraArrayBuffer(dados) {
+    if (dados instanceof ArrayBuffer) return dados;
+    if (dados && dados.buffer instanceof ArrayBuffer) {
+      return dados.buffer.slice(dados.byteOffset, dados.byteOffset + dados.byteLength);
+    }
+    throw new Error('Dados de ZIP em formato não suportado.');
+  }
+
   function ehImagem(nome) {
     return /\.(jpe?g|png|webp|gif|avif)$/i.test(nome || '');
   }
@@ -27,7 +36,8 @@
     return -1;
   }
 
-  function listar(buf) {
+  function listar(entrada) {
+    var buf = paraArrayBuffer(entrada);
     if (!buf || buf.byteLength < 22) throw new Error('Arquivo ZIP vazio ou inválido.');
     var dv = new DataView(buf);
     var eocd = encontrarEocd(buf);
@@ -56,7 +66,8 @@
     return lista;
   }
 
-  async function extrairEntrada(buf, ent) {
+  async function extrairEntrada(entrada, ent) {
+    var buf = paraArrayBuffer(entrada);
     var dv = new DataView(buf);
     if (ent.localOff + 30 > buf.byteLength) throw new Error('Entrada corrompida: ' + ent.nome);
     var nameLen = dv.getUint16(ent.localOff + 26, true);
@@ -76,8 +87,9 @@
     throw new Error('Método de compressão não suportado (' + ent.metodo + ') em ' + ent.nome);
   }
 
-  async function lerZip(buf, opcoes) {
+  async function lerZip(entrada, opcoes) {
     var opts = opcoes || {};
+    var buf = paraArrayBuffer(entrada);
     var todas = listar(buf);
     var alvos = todas.filter(function (e) { return ehImagem(e.nome); });
     if (!alvos.length) throw new Error('O ZIP não contém imagens (JPG, PNG ou WebP).');
