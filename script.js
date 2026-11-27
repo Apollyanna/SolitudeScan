@@ -3313,7 +3313,10 @@ async function rodarTestesSolitude() {
 }
 
 function fecharDropdowns(e) {
-  if (e.target.closest('.dropdown') || e.target.closest('#notifBadge')) return;
+  // Cliques no proprio sino e no painel de notificacoes nao podem fechar o
+  // dropdown: antes o handler global rodava depois do onclick do botao e
+  // fechava o painel no mesmo clique (o sino nunca abria).
+  if (e.target.closest('.dropdown') || e.target.closest('#btnNotificacoes') || e.target.closest('#notifBadge')) return;
   document.querySelectorAll('.dropdown.active').forEach(d => d.classList.remove('active'));
   AppState.notificacoes.dropdownAberto = false;
 }
