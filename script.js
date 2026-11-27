@@ -292,6 +292,55 @@ function abrirCadastro() {
   toggleModal('registerModal', true);
 }
 
+const LIMITE_TENTATIVAS_LOGIN = 5;
+const JANELA_TENTATIVAS_LOGIN_MS = 5 * 60 * 1000;
+
+function chaveTentativasLogin(email) {
+  return 'solitude_login_' + String(email || '').toLowerCase();
+}
+
+function lerTentativasLogin(email) {
+  try {
+    const bruto = JSON.parse(localStorage.getItem(chaveTentativasLogin(email)) || 'null');
+    if (!bruto || !Array.isArray(bruto.tentativas)) return { tentativas: [], bloqueadoAte: 0 };
+    return bruto;
+  } catch (e) {
+    return { tentativas: [], bloqueadoAte: 0 };
+  }
+}
+
+function loginBloqueado(email) {
+  return Number(lerTentativasLogin(email).bloqueadoAte) > Date.now();
+}
+
+function minutosRestantesBloqueio(email) {
+  const restante = Number(lerTentativasLogin(email).bloqueadoAte) - Date.now();
+  return Math.max(1, Math.ceil(restante / 60000));
+}
+
+function registrarFalhaLogin(email) {
+  const agora = Date.now();
+  const estado = lerTentativasLogin(email);
+  const tentativas = (estado.tentativas || []).filter(t => agora - Number(t) < JANELA_TENTATIVAS_LOGIN_MS);
+  tentativas.push(agora);
+  const bloqueadoAte = tentativas.length >= LIMITE_TENTATIVAS_LOGIN
+    ? agora + JANELA_TENTATIVAS_LOGIN_MS
+    : Number(estado.bloqueadoAte) || 0;
+  try {
+    localStorage.setItem(chaveTentativasLogin(email), JSON.stringify({ tentativas, bloqueadoAte }));
+  } catch (e) {}
+  if (bloqueadoAte > agora && AppState.supabase) {
+    AppState.supabase.rpc('log_security_event', {
+      p_event: 'login_bloqueado',
+      p_detail: { tentativas: tentativas.length }
+    }).then(() => {}, () => {});
+  }
+}
+
+function limparFalhasLogin(email) {
+  try { localStorage.removeItem(chaveTentativasLogin(email)); } catch (e) {}
+}
+
 async function executarLoginCustom(e) {
   e.preventDefault();
   const email = document.getElementById('loginEmail').value.trim();
@@ -299,6 +348,10 @@ async function executarLoginCustom(e) {
 
   if (!validarEmail(email)) {
     mostrarToast('Digite um e-mail válido para entrar na sua conta.', 'alerta');
+    return;
+  }
+  if (loginBloqueado(email)) {
+    mostrarToast('Muitas tentativas de login. Aguarde ' + minutosRestantesBloqueio(email) + ' minuto(s) e tente novamente.', 'erro', 7000);
     return;
   }
   if (!AppState.supabase) {
@@ -311,10 +364,12 @@ async function executarLoginCustom(e) {
     // Mensagem única de propósito: não revela se o e-mail existe, se a senha
     // está errada ou se a conta ainda não foi confirmada (evita enumeração).
     console.warn('[SolitudeScan] Falha de login:', error.message);
+    registrarFalhaLogin(email);
     mostrarToast('Não foi possível entrar. Confira e-mail e senha. Se você acabou de se cadastrar, confirme o e-mail antes de entrar.', 'erro', 7000);
     return;
   }
 
+  limparFalhasLogin(email);
   AppState.usuario.logado = true;
   AppState.usuario.id = data.user.id;
   AppState.usuario.email = email;
@@ -408,7 +463,11 @@ async function verificarSessaoSupabase() {
 async function carregarPerfilRemoto(userId) {
   if (!AppState.supabase) return;
   try {
-    const { data } = await AppState.supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+    const { data } = await AppState.supabase
+      .from('profiles')
+      .select('id, display_name, username, avatar_url, is_admin, is_vip, vip_plan, vip_expires_at')
+      .eq('id', userId)
+      .maybeSingle();
     if (!data) return;
     AppState.usuario.isAdmin = !!data.is_admin;
     if (data.display_name || data.username) AppState.usuario.nome = data.display_name || data.username;
@@ -1611,12 +1670,14 @@ async function adicionarComentario(obraId, texto, comentarioPaiId = null, isSpoi
   }
 
   try {
+    // A coluna real da tabela é `is_spoiler`; enviar `spoiler` fazia o insert
+    // inteiro falhar e o comentário nunca era publicado.
     const { error } = await AppState.supabase.from('comments').insert({
       work_id: obraId,
       user_id: AppState.usuario.id,
-      content: texto,
+      content: String(texto).trim(),
       parent_id: comentarioPaiId,
-      spoiler: isSpoiler
+      is_spoiler: !!isSpoiler
     });
     if (error) throw error;
     AppState.comentarios.ultimoComentarioEm = agora;
