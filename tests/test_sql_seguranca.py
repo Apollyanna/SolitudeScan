@@ -76,19 +76,27 @@ def test_criacao_idempotente(principal: str) -> None:
     )
     assert not sem_protecao, f"{len(sem_protecao)} create index sem IF NOT EXISTS"
 
-    colunas_sem_guarda = re.findall(
-        r"alter\s+table\s+public\.\w+\s+add\s+(?!column\s+)?(?!if\s+not\s+exists)", principal, re.I
-    )
-    assert not colunas_sem_guarda, f"{len(colunas_sem_guarda)} ALTER TABLE ADD sem IF NOT EXISTS"
+    for corpo in re.findall(
+        r"alter\s+table\s+(?:if\s+exists\s+)?public\.\w+([\s\S]*?);", principal, re.I
+    ):
+        total_add = len(re.findall(r"\badd\s+", corpo, re.I))
+        guardados = len(re.findall(r"\badd\s+column\s+if\s+not\s+exists", corpo, re.I))
+        assert total_add == guardados, (
+            f"{total_add - guardados} cláusula(s) ADD sem 'column if not exists' em ALTER TABLE"
+        )
 
 
 def test_rls_ativo_nas_tabelas_principais(principal: str) -> None:
+    """RLS ligado por comando direto ou pela lista do laço public.ss_rls()."""
     minusculo = principal.lower()
-    faltando = [
-        t
-        for t in TABELAS_COM_RLS
-        if f"alter table public.{t} enable row level security" not in minusculo
-    ]
+    bloco = re.search(r"unnest\(\s*array\[([\s\S]*?)\]\s*\)", principal, re.I)
+    no_laco = set(re.findall(r"'([a-z_]+)'", bloco.group(1))) if bloco else set()
+
+    faltando = []
+    for tabela in TABELAS_COM_RLS:
+        direto = f"alter table public.{tabela} enable row level security" in minusculo
+        if not direto and tabela not in no_laco:
+            faltando.append(tabela)
     assert not faltando, f"RLS não ativado em: {', '.join(faltando)}"
 
 
@@ -102,11 +110,16 @@ def test_politicas_sao_recriadas_com_drop(principal: str) -> None:
 
 def test_funcoes_security_definer_fixam_search_path(principal: str) -> None:
     """security definer sem search_path fixo permite sequestro de schema."""
-    for m in re.finditer(r"security\s+definer", principal, re.I):
-        trecho = principal[m.start(): m.start() + 400].lower()
-        assert "set search_path" in trecho, (
-            "função SECURITY DEFINER sem SET search_path em "
-            f"{principal[: m.start()].count(chr(10)) + 1}"
+    cabecalhos = re.findall(
+        r"create\s+(?:or\s+replace\s+)?function[\s\S]*?as\s+\$\$", principal, re.I
+    )
+    assert cabecalhos, "nenhuma função encontrada no script"
+    definer = [c for c in cabecalhos if re.search(r"security\s+definer", c, re.I)]
+    assert definer, "nenhuma função SECURITY DEFINER encontrada"
+    for cabecalho in definer:
+        assert re.search(r"set\s+search_path", cabecalho, re.I), (
+            "função SECURITY DEFINER sem SET search_path: "
+            + " ".join(cabecalho.split())[:140]
         )
 
 
@@ -141,14 +154,19 @@ def test_sintaxe_aceita_pelo_postgresql(principal: str) -> None:
 
 
 def test_corpos_plpgsql_validos(principal: str) -> None:
+    """O parser plpgsql do libpg_query recebe o statement completo, não o corpo solto."""
     pglast = pytest.importorskip("pglast", reason="pglast não instalado neste ambiente")
-    from pglast.parser import parse_plpgsql
 
-    corpos = re.findall(r"language\s+plpgsql[\s\S]*?as\s+\$\$([\s\S]*?)\$\$", principal, re.I)
-    corpos += re.findall(r"\bdo\s+\$\$([\s\S]*?)\$\$", principal, re.I)
-    assert corpos, "nenhum corpo plpgsql encontrado para validar"
-    for i, corpo in enumerate(corpos, start=1):
-        parse_plpgsql(corpo)
+    funcoes = re.findall(
+        r"create\s+(?:or\s+replace\s+)?function[\s\S]*?as\s+\$\$[\s\S]*?\$\$\s*;", principal, re.I
+    )
+    assert funcoes, "nenhuma função plpgsql encontrada"
+    for funcao in funcoes:
+        pglast.parse_plpgsql(funcao)
+
+    blocos = re.findall(r"\bdo\s+\$\$[\s\S]*?\$\$\s*;", principal, re.I)
+    for bloco in blocos:
+        pglast.parse_plpgsql(bloco)
 
 
 def test_definicoes_de_politica_validas(principal: str) -> None:
