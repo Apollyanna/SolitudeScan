@@ -43,7 +43,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </noscript>
 
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
@@ -59,6 +59,19 @@
   <div class="nav-search">
     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
     <input type="search" id="searchInput" class="search-input" placeholder="Buscar obras..." aria-label="Buscar obras" autocomplete="off" enterkeyhint="search">
+  </div>
+  <div class="notif-wrapper">
+    <button type="button" class="nav-btn" id="btnNotificacoes" onclick="toggleDropdownNotificacoes()" aria-label="Notificações" aria-haspopup="true" aria-expanded="false" aria-controls="notifDropdown">
+      <i class="fa-regular fa-bell" aria-hidden="true"></i>
+      <span id="notifBadge" class="notif-badge" style="display:none;" aria-live="polite"></span>
+    </button>
+    <div id="notifDropdown" class="dropdown notif-dropdown" role="region" aria-label="Lista de notificações">
+      <div class="notif-header">
+        <span>Notificações</span>
+        <button type="button" class="notif-mark-all" onclick="marcarTodasNotificacoesComoLidas()">Marcar todas como lidas</button>
+      </div>
+      <div id="notifList"></div>
+    </div>
   </div>
   <button type="button" class="nav-btn theme-toggle" id="themeToggleBtn" aria-label="Alternar tema claro/escuro">
     <i class="fa-solid fa-moon" id="iconeTemaBotao" aria-hidden="true"></i>
@@ -198,7 +211,12 @@
         <button type="button" role="tab" aria-selected="false" class="tab-btn" onclick="switchTabProfile('favoritos', this)">Favoritos</button>
         <button type="button" role="tab" aria-selected="false" class="tab-btn" onclick="switchTabProfile('listas', this)">Minhas Listas</button>
       </div>
-      <div id="profileHistorico" class="profile-tab-content active"><div id="historicoContainer" class="manga-grid" role="list"></div></div>
+      <div id="profileHistorico" class="profile-tab-content active">
+        <div class="profile-tab-toolbar">
+          <button type="button" class="btn-secondary small" onclick="limparHistorico()"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Limpar histórico</button>
+        </div>
+        <div id="historicoContainer" class="manga-grid" role="list"></div>
+      </div>
       <div id="profileFavoritos" class="profile-tab-content"><div id="favoritosContainer" class="manga-grid" role="list"></div></div>
       <div id="profileListas" class="profile-tab-content"><div id="listasContainer" class="listas-grid" role="list"></div></div>
     </section>
@@ -336,8 +354,10 @@
       <button type="button" class="close-btn" onclick="toggleModal('detalhesModal')" aria-label="Fechar modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     </div>
     <div class="modal-body" id="detalhesModalBody"></div>
-    <div class="modal-footer">
+    <div class="modal-footer modal-footer-wrap">
       <button type="button" id="btnFavoritar" class="btn-secondary" onclick="alternarFavorito()" aria-pressed="false"><i class="fa-regular fa-heart" aria-hidden="true"></i> Favoritar</button>
+      <button type="button" class="btn-secondary" onclick="abrirAdicionarLista()"><i class="fa-solid fa-folder-plus" aria-hidden="true"></i> Adicionar à Lista</button>
+      <button type="button" class="btn-secondary" onclick="compartilharObraAtual()"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Compartilhar</button>
       <button type="button" class="btn-primary" onclick="abrirLeitor()"><i class="fa-solid fa-book-open" aria-hidden="true"></i> Ler Primeiro Capítulo</button>
     </div>
   </div>
@@ -481,6 +501,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"
         integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o"
         crossorigin="anonymous" defer></script>
-<script src="script.js?v=5" defer></script>
+<script src="script.js?v=6" defer></script>
 </body>
 </html>
