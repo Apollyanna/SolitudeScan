@@ -1,0 +1,11 @@
+# Capturas de tela e arquivos pessoais não devem ir para o repositório
+Screenshot_*.jpg
+Screenshot_*.jpeg
+Screenshot_*.png
+screenshot_*.jpg
+screenshot_*.png
+
+# Ambiente local
+__pycache__/
+*.pyc
+.pytest_cache/

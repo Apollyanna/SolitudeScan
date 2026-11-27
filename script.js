@@ -595,6 +595,11 @@ function atualizarPerfilTela() {
   const dentro = document.getElementById('loggedInView');
   if (fora) fora.style.display = u.logado ? 'none' : 'flex';
   if (dentro) dentro.style.display = u.logado ? 'flex' : 'none';
+
+  // Deslogado: esconde cartão, botões e abas do perfil, para não exibir
+  // nome/plano fictícios nem ações que exigem conta.
+  const secaoPerfil = document.querySelector('.profile-section');
+  if (secaoPerfil) secaoPerfil.classList.toggle('perfil-deslogado', !u.logado);
   if (!u.logado) return;
 
   const foto = sanitizarUrlImagem(u.foto, PLACEHOLDERS.AVATAR_SVG, false);
@@ -885,7 +890,10 @@ function renderizarCatalogo() {
   }
 
   if (!obras.length) {
-    container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-book-open" aria-hidden="true"></i><p>Nenhuma obra encontrada com os filtros aplicados.</p><button type="button" class="btn-secondary" onclick="limparFiltros()">Limpar Filtros</button></div>';
+    const temFiltro = c.generoAtual !== 'Todos' || c.statusFiltro !== 'Todos' || !!c.termoBusca;
+    container.innerHTML = temFiltro
+      ? '<div class="empty-state"><i class="fa-solid fa-book-open" aria-hidden="true"></i><p>Nenhuma obra encontrada com os filtros aplicados.</p><button type="button" class="btn-secondary" onclick="limparFiltros()">Limpar Filtros</button></div>'
+      : '<div class="empty-state"><i class="fa-solid fa-book-open" aria-hidden="true"></i><p>O acervo ainda está sendo publicado. Volte em breve.</p></div>';
     return;
   }
   container.innerHTML = obras.map(criarCardObra).join('');
