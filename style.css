@@ -2594,3 +2594,13 @@ ins.adsbygoogle,
   background-clip: text;
   color: transparent;
 }
+
+/* Perfil sem sessão: mostra apenas o convite de login.
+   Evita exibir nome/plano fictícios e ações que exigem conta. */
+.profile-section.perfil-deslogado .profile-header,
+.profile-section.perfil-deslogado .profile-actions,
+.profile-section.perfil-deslogado .profile-tabs,
+.profile-section.perfil-deslogado .profile-tab-content,
+.profile-section.perfil-deslogado #zonaPerigoPerfil {
+  display: none !important;
+}
