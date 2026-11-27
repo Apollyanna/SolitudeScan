@@ -66,6 +66,23 @@ class Handler(SimpleHTTPRequestHandler):
                     return indice
         return caminho
 
+    def _eh_pagina_404(self):
+        return self.path.split("?")[0].rstrip("/") in ("/404", "/404.html")
+
+    def do_GET(self):
+        # A página de erro deve ser entregue com status 404 (e não 200),
+        # tanto em acesso direto quanto como fallback de rota inexistente.
+        if self._eh_pagina_404():
+            self.send_error(404)
+            return
+        super().do_GET()
+
+    def do_HEAD(self):
+        if self._eh_pagina_404():
+            self.send_error(404)
+            return
+        super().do_HEAD()
+
     def log_message(self, formato, *args):
         # Não registra query strings nem IPs completos em produção.
         print("%s - %s" % (self.address_string(), formato % args), flush=True)
