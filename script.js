@@ -171,16 +171,6 @@ function debounce(fn, wait) {
   };
 }
 
-function throttle(fn, limit) {
-  let ocupado = false;
-  return function (...args) {
-    if (ocupado) return;
-    fn.apply(this, args);
-    ocupado = true;
-    setTimeout(() => { ocupado = false; }, limit);
-  };
-}
-
 function mostrarToast(mensagem, tipo = 'info', duracao = 4000) {
   const container = document.getElementById('toastContainer');
   if (!container) return;
@@ -1960,23 +1950,6 @@ function copiarLinkObra(obra, url) {
   }
 }
 
-function compartilharViaRedeSocial(rede) {
-  const obra = encontrarObraPorId(AppState.leitor.obraAtualId);
-  if (!obra) {
-    mostrarToast('Nenhuma obra selecionada.', 'alerta');
-    return;
-  }
-  const url = encodeURIComponent(urlDaObra(obra));
-  const texto = encodeURIComponent('Confira "' + obra.titulo + '" no SolitudeScan!');
-  const destinos = {
-    twitter: 'https://twitter.com/intent/tweet?text=' + texto + '&url=' + url,
-    facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + url,
-    whatsapp: 'https://wa.me/?text=' + texto + '%20' + url,
-    telegram: 'https://t.me/share/url?url=' + url + '&text=' + texto
-  };
-  if (destinos[rede]) window.open(destinos[rede], '_blank', 'noopener,noreferrer,width=600,height=400');
-}
-
 function exportarDadosUsuario() {
   if (!AppState.usuario.logado) {
     mostrarToast('Faça login para exportar seus dados.', 'alerta');
@@ -2156,7 +2129,11 @@ function verLista(listaId) {
   }
   const modal = garantirModalListaObras();
   modal.querySelector('.modal-header h3').textContent = lista.name;
-  modal.querySelector('.modal-body').innerHTML = '<div class="manga-grid">' + obras.map(criarCardObra).join('') + '</div>';
+  modal.querySelector('.modal-body').innerHTML = '<div class="manga-grid">' + obras.map(obra => `
+      <div class="lista-obra-wrap">
+        ${criarCardObra(obra)}
+        <button type="button" class="btn-icon lista-obra-remover" onclick="removerObraDaLista('${escaparHtml(obra.id)}','${escaparHtml(lista.id)}')" aria-label="Remover ${escaparHtml(obra.titulo)} da lista" title="Remover da lista"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+      </div>`).join('') + '</div>';
   toggleModal('listaObrasModal', true);
 }
 
