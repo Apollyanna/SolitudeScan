@@ -2373,3 +2373,184 @@ ins.adsbygoogle,
     display: none !important;
   }
 }
+/* ===== Correções da auditoria: notificações, ações do modal e páginas legais ===== */
+.notif-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.notif-wrapper .notif-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--primaria);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 17px;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--sombra-primaria);
+  pointer-events: none;
+}
+
+.notif-dropdown {
+  right: 0;
+  left: auto;
+  width: min(340px, calc(100vw - 24px));
+  max-height: min(420px, 70vh);
+  overflow-y: auto;
+  padding: 0;
+}
+
+.notif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--borda);
+  position: sticky;
+  top: 0;
+  background: var(--fundo-card);
+  z-index: 1;
+}
+
+.notif-header span {
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.notif-mark-all {
+  background: none;
+  border: 0;
+  color: var(--primaria);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 2px;
+}
+
+.notif-mark-all:hover,
+.notif-mark-all:focus-visible {
+  color: var(--rosa-claro);
+  text-decoration: underline;
+}
+
+#notifList {
+  padding: 6px;
+}
+
+.modal-footer-wrap {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-tab-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.listas-escolha {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lista-escolha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+}
+
+.lista-escolha-nome {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lista-contagem {
+  font-size: 0.75rem;
+  color: var(--texto-claro);
+  background: rgba(236, 72, 153, 0.12);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+/* Páginas institucionais (termos, privacidade, contato, denúncia) */
+.legal-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 28px 18px 64px;
+}
+
+.legal-page h1 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  margin-bottom: 6px;
+}
+
+.legal-page .legal-updated {
+  color: var(--texto-claro);
+  font-size: 0.82rem;
+  margin-bottom: 22px;
+}
+
+.legal-page h2 {
+  font-size: 1.05rem;
+  margin: 26px 0 10px;
+  color: var(--rosa-claro);
+}
+
+.legal-page p,
+.legal-page li {
+  color: var(--texto-claro);
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+.legal-page ul {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.legal-page a {
+  color: var(--primaria);
+  text-decoration: underline;
+}
+
+.legal-page .legal-card {
+  background: var(--fundo-card);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 16px 18px;
+  margin: 14px 0;
+}
+
+.legal-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.legal-back:hover {
+  color: var(--primaria);
+}
+
+@media (max-width: 600px) {
+  .legal-page {
+    padding: 20px 14px 56px;
+  }
+}

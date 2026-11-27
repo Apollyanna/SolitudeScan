@@ -1798,6 +1798,7 @@ async function carregarNotificacoes() {
     if (error) throw error;
     AppState.notificacoes.lista = data || [];
     atualizarBadgeNotificacoes();
+    if (AppState.notificacoes.dropdownAberto) renderizarListaNotificacoes();
   } catch (err) {
     console.error('[SolitudeScan] Erro ao carregar notificações:', err);
   }
@@ -1813,15 +1814,24 @@ function atualizarBadgeNotificacoes() {
 
 function toggleDropdownNotificacoes() {
   const dropdown = document.getElementById('notifDropdown');
+  const botao = document.getElementById('btnNotificacoes');
   if (!dropdown) return;
   AppState.notificacoes.dropdownAberto = !AppState.notificacoes.dropdownAberto;
   dropdown.classList.toggle('active', AppState.notificacoes.dropdownAberto);
-  if (AppState.notificacoes.dropdownAberto) renderizarListaNotificacoes();
+  if (botao) botao.setAttribute('aria-expanded', String(AppState.notificacoes.dropdownAberto));
+  if (AppState.notificacoes.dropdownAberto) {
+    renderizarListaNotificacoes();
+    if (AppState.usuario.logado) carregarNotificacoes().then(renderizarListaNotificacoes);
+  }
 }
 
 function renderizarListaNotificacoes() {
   const container = document.getElementById('notifList');
   if (!container) return;
+  if (!AppState.usuario.logado) {
+    container.innerHTML = '<div class="notif-empty"><i class="fa-regular fa-bell" aria-hidden="true"></i><p>Entre na sua conta para ver suas notificações.</p><button type="button" class="btn-primary small" onclick="fazerLogin()">Entrar</button></div>';
+    return;
+  }
   if (!AppState.notificacoes.lista.length) {
     container.innerHTML = '<div class="notif-empty"><i class="fa-regular fa-bell" aria-hidden="true"></i><p>Nenhuma notificação.</p></div>';
     return;
@@ -2171,8 +2181,59 @@ async function removerObraDaLista(obraId, listaId) {
   mostrarToast('Obra removida da lista.', 'info');
 }
 
-function salvarLista() {
-  return salvarListas();
+function abrirAdicionarLista() {
+  const obraId = AppState.leitor.obraAtualId;
+  if (!obraId) {
+    mostrarToast('Nenhuma obra selecionada.', 'alerta');
+    return;
+  }
+  if (!AppState.usuario.logado) {
+    mostrarToast('Faça login para salvar obras em listas.', 'alerta');
+    fazerLogin();
+    return;
+  }
+  const modal = garantirModalListaObras();
+  modal.querySelector('.modal-header h3').textContent = 'Adicionar à lista';
+  const listas = AppState.listas.personalizadas;
+  const opcoes = listas.length
+    ? listas.map(l => `
+      <button type="button" class="btn-secondary lista-escolha" onclick="escolherListaParaObra('${escaparHtml(String(l.id))}')">
+        <i class="fa-solid fa-list" aria-hidden="true"></i>
+        <span class="lista-escolha-nome">${escaparHtml(l.name)}</span>
+        <span class="lista-contagem">${(l.work_ids || []).length}</span>
+      </button>`).join('')
+    : '<p class="login-prompt">Você ainda não tem listas. Crie a primeira abaixo.</p>';
+  modal.querySelector('.modal-body').innerHTML =
+    '<div class="listas-escolha">' + opcoes + '</div>' +
+    '<button type="button" class="btn-primary full-width" style="margin-top:14px;" onclick="criarListaParaObra()"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nova lista</button>';
+  toggleModal('listaObrasModal', true);
+}
+
+async function escolherListaParaObra(listaId) {
+  await adicionarObraALista(AppState.leitor.obraAtualId, listaId);
+  toggleModal('listaObrasModal');
+  renderizarListas();
+}
+
+async function criarListaParaObra() {
+  const nome = (prompt('Nome da nova lista:') || '').trim();
+  if (!nome) return;
+  if (nome.length > 50) {
+    mostrarToast('Nome muito longo. Máximo 50 caracteres.', 'alerta');
+    return;
+  }
+  const nova = {
+    id: 'local_' + Date.now(),
+    name: nome,
+    work_ids: [String(AppState.leitor.obraAtualId)],
+    created_at: new Date().toISOString(),
+    user_id: AppState.usuario.id
+  };
+  AppState.listas.personalizadas.push(nova);
+  await salvarListas();
+  renderizarListas();
+  toggleModal('listaObrasModal');
+  mostrarToast('Obra adicionada à lista "' + nome + '".', 'sucesso');
 }
 
 const PRECOS_PLANOS = Object.freeze({ 'VIP Mensal': 14.9, 'VIP Trimestral': 39.9, 'VIP Anual': 149.9 });
@@ -3291,8 +3352,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const btnAdmin = document.getElementById('btnAdminNav');
   if (btnAdmin) btnAdmin.addEventListener('click', abrirPainelAdmin);
-  const notif = document.getElementById('notifBadge');
-  if (notif) notif.addEventListener('click', toggleDropdownNotificacoes);
+  // O sino usa onclick no proprio botao; nao adicionar listener no badge
+  // interno, senao o clique alternava o dropdown duas vezes (abria e fechava).
 
   setInterval(verificarVipAtivo, 3600000);
   setInterval(limparPlaceholdersMortos, 10000);
