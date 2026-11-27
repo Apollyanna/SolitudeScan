@@ -53,13 +53,30 @@
 <noscript><p style="padding:16px;text-align:center">Ative o JavaScript para usar o SolitudeScan.</p></noscript>
 
 <nav class="navbar" aria-label="Navegação principal">
-  <div class="navbar-brand">
-    <a href="/" aria-label="SolitudeScan - Página inicial"><span class="logo-text">Solitude<span class="highlight">Scan</span></span></a>
+  <a class="navbar-brand" href="/" aria-label="SolitudeScan — Página inicial">
+    <span class="logo-text">Solitude<span class="highlight">Scan</span></span>
+  </a>
+
+  <div class="nav-links" role="tablist" aria-label="Seções principais">
+    <button type="button" role="tab" aria-selected="true" class="nav-link nav-item active" data-tab="tab-home" onclick="switchTab('tab-home', this)">
+      <i class="fa-solid fa-house" aria-hidden="true"></i><span>Início</span>
+    </button>
+    <button type="button" role="tab" aria-selected="false" class="nav-link nav-item" data-tab="tab-vip" onclick="switchTab('tab-vip', this)">
+      <i class="fa-solid fa-crown" aria-hidden="true"></i><span>VIP</span>
+    </button>
+    <button type="button" role="tab" aria-selected="false" class="nav-link nav-item" data-tab="tab-profile" onclick="switchTab('tab-profile', this)">
+      <i class="fa-solid fa-user" aria-hidden="true"></i><span>Perfil</span>
+    </button>
+    <button type="button" class="nav-link" id="btnAdminNavDesktop" style="display:none;" onclick="abrirPainelAdmin()">
+      <i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span>Admin</span>
+    </button>
   </div>
+
   <div class="nav-search">
     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
     <input type="search" id="searchInput" class="search-input" placeholder="Buscar obras..." aria-label="Buscar obras" autocomplete="off" enterkeyhint="search">
   </div>
+
   <div class="notif-wrapper">
     <button type="button" class="nav-btn" id="btnNotificacoes" onclick="toggleDropdownNotificacoes()" aria-label="Notificações" aria-haspopup="true" aria-expanded="false" aria-controls="notifDropdown">
       <i class="fa-regular fa-bell" aria-hidden="true"></i>
@@ -73,73 +90,138 @@
       <div id="notifList"></div>
     </div>
   </div>
+
   <button type="button" class="nav-btn theme-toggle" id="themeToggleBtn" aria-label="Alternar tema claro/escuro">
     <i class="fa-solid fa-moon" id="iconeTemaBotao" aria-hidden="true"></i>
   </button>
+
+  <div id="loggedInView" class="nav-user" style="display:none;">
+    <img id="userAvatarImg" class="nav-avatar" src="icon.svg" alt="Avatar do usuário" width="32" height="32" decoding="async">
+    <span id="userNameDisplay" class="nav-username">Leitor</span>
+    <span id="userPlanBadge" class="plan-badge">Plano Gratuito</span>
+    <button type="button" class="btn-icon" onclick="fazerLogout()" aria-label="Sair da conta" title="Sair">
+      <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+    </button>
+  </div>
 </nav>
 
 <main class="container" id="mainContent" tabindex="-1">
 
   <div id="tab-home" class="tab-content active" role="tabpanel" aria-label="Página inicial">
+
     <section id="heroBannerSection" class="hero-section" aria-label="Destaques">
       <div class="hero-slider" role="region" aria-roledescription="carrossel" aria-label="Obras em destaque">
         <div class="hero-track" id="heroTrack"></div>
       </div>
     </section>
 
-     <section class="filters-section" aria-label="Filtros de catálogo">
-      <select id="generoFiltro" class="filter-select" aria-label="Filtrar por gênero">
-        <option value="Todos">Todos os Gêneros</option>
-      </select>
-      <select id="statusFiltro" class="filter-select" aria-label="Filtrar por status">
-        <option value="Todos">Todos os Status</option>
-        <option value="Em Lançamento">Em Lançamento</option>
-        <option value="Completo">Completo</option>
-        <option value="Hiato">Hiato</option>
-      </select>
-      <select id="ordemFiltro" class="filter-select" aria-label="Ordenar por">
-        <option value="recentes">Mais Recentes</option>
-        <option value="populares">Mais Populares</option>
-        <option value="avaliados">Melhor Avaliados</option>
-      </select>
+    <section id="continueLendoSection" class="catalog-section" aria-labelledby="tituloContinue" style="display:none;">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="tituloContinue">Continue lendo</h2>
+          <p class="section-sub">Retome a leitura de onde você parou</p>
+        </div>
+      </div>
+      <div id="continueLendoContainer" class="rail" role="list" aria-live="polite"></div>
     </section>
 
-    <div id="generoChips" class="genre-chips" role="group" aria-label="Filtrar por gênero"></div>
+    <section class="catalog-section" aria-labelledby="tituloUltimas">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="tituloUltimas">Últimas atualizações</h2>
+          <p class="section-sub">Capítulos publicados recentemente</p>
+        </div>
+        <button type="button" class="section-link" onclick="focarCatalogo()">Explorar catálogo <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+      </div>
 
-    <section aria-labelledby="tituloNovos" style="display:none;">
-      <h2 class="section-title" id="tituloNovos">Novos Capítulos</h2>
-      <div id="novosContainer" class="carousel-track" role="list"></div>
-    </section>
+      <div class="catalog-toolbar" role="group" aria-label="Filtros do catálogo">
+        <select id="generoFiltro" class="filter-select" aria-label="Filtrar por gênero">
+          <option value="Todos">Todos os Gêneros</option>
+        </select>
+        <select id="statusFiltro" class="filter-select" aria-label="Filtrar por status">
+          <option value="Todos">Todos os Status</option>
+          <option value="Em Lançamento">Em Lançamento</option>
+          <option value="Completo">Completo</option>
+          <option value="Hiato">Hiato</option>
+        </select>
+        <select id="ordemFiltro" class="filter-select" aria-label="Ordenar por">
+          <option value="recentes">Mais Recentes</option>
+          <option value="populares">Mais Populares</option>
+          <option value="avaliados">Melhor Avaliados</option>
+        </select>
+      </div>
 
-    <section aria-labelledby="tituloUltimas">
-      <h2 class="section-title" id="tituloUltimas">Últimas Atualizações</h2>
+      <div id="generoChips" class="genre-chips" role="group" aria-label="Filtrar por gênero"></div>
+
       <div id="mangaContainer" class="manga-grid" role="list" aria-live="polite"></div>
     </section>
 
-    <section aria-labelledby="tituloTendencias">
-      <h2 class="section-title" id="tituloTendencias">Tendências da Semana</h2>
-      <div id="tendenciasContainer" class="manga-grid" role="list" aria-live="polite"></div>
+    <section class="catalog-section" aria-labelledby="tituloTendencias">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="tituloTendencias">Tendências da semana</h2>
+          <p class="section-sub">As obras mais lidas nos últimos dias</p>
+        </div>
+      </div>
+      <div id="tendenciasContainer" class="rail" role="list" aria-live="polite"></div>
     </section>
 
-    <section id="continueLendoSection" aria-labelledby="tituloContinue" style="display:none;">
-      <h2 class="section-title" id="tituloContinue">Continue Lendo</h2>
-      <div id="continueLendoContainer" class="manga-grid" role="list" aria-live="polite"></div>
-    </section>
-
-    <section aria-labelledby="tituloRanking">
-      <h2 class="section-title" id="tituloRanking">Ranking</h2>
+    <section class="catalog-section" aria-labelledby="tituloRanking">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="tituloRanking">Ranking</h2>
+          <p class="section-sub">Melhores avaliações da comunidade</p>
+        </div>
+      </div>
       <div id="rankingContainer" class="ranking-list" role="list" aria-live="polite"></div>
     </section>
-    <section aria-labelledby="tituloCompletos" style="display:none;">
-      <h2 class="section-title" id="tituloCompletos">Obras Completas</h2>
-      <div id="completosContainer" class="manga-grid" role="list"></div>
+
+    <section class="catalog-section" aria-labelledby="tituloGeneros">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="tituloGeneros">Explore por gênero</h2>
+          <p class="section-sub">Encontre sua próxima leitura</p>
+        </div>
+      </div>
+      <div id="generosGrid" class="generos-grid" role="list"></div>
     </section>
+
+    <div id="novosContainer" class="manga-grid" role="list" hidden></div>
+    <div id="completosContainer" class="manga-grid" role="list" hidden></div>
   </div>
 
   <div id="tab-vip" class="tab-content" role="tabpanel" aria-label="Planos VIP">
-    <section class="vip-section">
-      <h2 class="section-title">Torne-se VIP</h2>
-      <p class="vip-description">Apoie o SolitudeScan e tenha acesso a capítulos antecipados, sem anúncios e com qualidade máxima.</p>
+    <section class="vip-hero">
+      <span class="vip-eyebrow"><i class="fa-solid fa-crown" aria-hidden="true"></i> SolitudeScan VIP</span>
+      <h2 class="section-title">Leia sem limites e apoie o projeto</h2>
+      <p class="section-sub">Capítulos antecipados, leitura sem anúncios e acesso a conteúdos exclusivos. Sem cobrança automática.</p>
+      <ul class="vip-hero-points">
+        <li><i class="fa-solid fa-check" aria-hidden="true"></i> Capítulos antecipados</li>
+        <li><i class="fa-solid fa-check" aria-hidden="true"></i> Leitura sem anúncios</li>
+        <li><i class="fa-solid fa-check" aria-hidden="true"></i> Conteúdos exclusivos</li>
+        <li><i class="fa-solid fa-check" aria-hidden="true"></i> Suporte prioritário</li>
+      </ul>
+    </section>
+
+    <section class="vip-account" aria-labelledby="tituloMinhaAssinatura">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="tituloMinhaAssinatura">Minha assinatura</h2>
+          <p class="section-sub">Status real da sua conta</p>
+        </div>
+      </div>
+      <div id="minhaAssinaturaContainer" class="subscription-card" aria-live="polite">
+        <p class="empty-hint">Entre na sua conta para ver o status da assinatura.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="tituloPlanos">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="tituloPlanos">Escolha seu plano</h2>
+          <p class="section-sub">Pagamento via PIX — o acesso é liberado somente após a confirmação do pagamento</p>
+        </div>
+      </div>
       <div class="vip-plans-grid">
         <div class="vip-card">
           <h3>VIP Mensal</h3>
@@ -149,76 +231,187 @@
             <li><i class="fa-solid fa-check" aria-hidden="true"></i> Leitura sem anúncios</li>
             <li><i class="fa-solid fa-check" aria-hidden="true"></i> Suporte prioritário</li>
           </ul>
-          <button type="button" class="btn-primary full-width" onclick="abrirModalPix('VIP Mensal')">Assinar Agora</button>
+          <button type="button" class="btn-primary full-width" onclick="abrirModalPix('VIP Mensal')">Assinar Mensal</button>
         </div>
         <div class="vip-card featured">
-          <div class="vip-badge">Mais Popular</div>
+          <div class="vip-badge">Mais popular</div>
           <h3>VIP Trimestral</h3>
           <p class="price">R$ 39,90<span>/3 meses</span></p>
           <ul class="vip-benefits">
-            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Todos os benefícios Mensais</li>
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Todos os benefícios do plano mensal</li>
             <li><i class="fa-solid fa-check" aria-hidden="true"></i> Economia de 11%</li>
             <li><i class="fa-solid fa-check" aria-hidden="true"></i> Badge exclusiva no perfil</li>
           </ul>
-          <button type="button" class="btn-primary full-width" onclick="abrirModalPix('VIP Trimestral')">Assinar Agora</button>
+          <button type="button" class="btn-primary full-width" onclick="abrirModalPix('VIP Trimestral')">Assinar Trimestral</button>
         </div>
         <div class="vip-card">
           <h3>VIP Anual</h3>
           <p class="price">R$ 149,90<span>/ano</span></p>
           <ul class="vip-benefits">
-            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Todos os benefícios Trimestrais</li>
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Todos os benefícios do plano trimestral</li>
             <li><i class="fa-solid fa-check" aria-hidden="true"></i> Economia de 16%</li>
             <li><i class="fa-solid fa-check" aria-hidden="true"></i> Acesso a conteúdos exclusivos</li>
           </ul>
-          <button type="button" class="btn-primary full-width" onclick="abrirModalPix('VIP Anual')">Assinar Agora</button>
+          <button type="button" class="btn-primary full-width" onclick="abrirModalPix('VIP Anual')">Assinar Anual</button>
         </div>
       </div>
+    </section>
+
+    <section class="vip-compare" aria-labelledby="tituloComparativo">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="tituloComparativo">Comparativo de planos</h2>
+          <p class="section-sub">O que muda entre gratuito e VIP</p>
+        </div>
+      </div>
+      <div class="compare-scroll">
+        <table class="compare-table">
+          <caption class="sr-only">Comparação entre plano gratuito e planos VIP</caption>
+          <thead>
+            <tr><th scope="col">Recurso</th><th scope="col">Gratuito</th><th scope="col">VIP</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Leitura de capítulos públicos</th><td>Sim</td><td>Sim</td></tr>
+            <tr><th scope="row">Capítulos antecipados</th><td>Não</td><td>Sim</td></tr>
+            <tr><th scope="row">Anúncios</th><td>Sim</td><td>Não</td></tr>
+            <tr><th scope="row">Conteúdos exclusivos</th><td>Não</td><td>Sim</td></tr>
+            <tr><th scope="row">Suporte prioritário</th><td>Não</td><td>Sim</td></tr>
+            <tr><th scope="row">Badge VIP no perfil</th><td>Não</td><td>Sim</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="vip-transparency" aria-labelledby="tituloTransparencia">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="tituloTransparencia">Condições e transparência</h2>
+          <p class="section-sub">Como funciona a cobrança, o cancelamento e o reembolso</p>
+        </div>
+      </div>
+      <div class="info-card">
+        <h3><i class="fa-solid fa-rotate" aria-hidden="true"></i> Renovação</h3>
+        <p>Não existe cobrança automática. O período contratado é pré-pago e o acesso VIP termina na data de expiração exibida no seu perfil. Para continuar, você gera um novo pagamento quando quiser.</p>
+      </div>
+      <div class="info-card">
+        <h3><i class="fa-solid fa-ban" aria-hidden="true"></i> Cancelamento</h3>
+        <p>Você pode deixar de renovar a qualquer momento, sem multa. O acesso VIP permanece ativo até o fim do período já pago e depois volta automaticamente para o plano gratuito.</p>
+      </div>
+      <div class="info-card">
+        <h3><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Reembolso</h3>
+        <p>Por ser conteúdo digital, você pode solicitar reembolso em até 7 dias corridos da compra, conforme o art. 49 do Código de Defesa do Consumidor, pelo <a href="/contato">canal de contato</a>. Depois desse prazo, cada pedido é analisado individualmente.</p>
+      </div>
+      <div class="info-card">
+        <h3><i class="fa-solid fa-receipt" aria-hidden="true"></i> Pagamento e liberação</h3>
+        <p>O pagamento é feito por PIX. Os benefícios VIP são liberados somente depois que o pagamento é confirmado no servidor — nenhum botão libera acesso por conta própria. Valores em reais (BRL).</p>
+      </div>
+      <div class="info-card">
+        <h3><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Identificação do fornecedor</h3>
+        <p>Os dados do responsável pelo SolitudeScan, o canal de atendimento e as condições completas estão nos <a href="/termos">Termos de Uso</a> e na <a href="/privacidade">Política de Privacidade</a>.</p>
+      </div>
+    </section>
+
+    <section class="vip-faq" aria-labelledby="tituloFaq">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="tituloFaq">Perguntas frequentes</h2>
+        </div>
+      </div>
+      <details class="faq-item">
+        <summary>Quando recebo o acesso VIP?</summary>
+        <p>Assim que o pagamento PIX é confirmado. Enquanto a confirmação não chega, o pedido aparece como pendente no seu perfil.</p>
+      </details>
+      <details class="faq-item">
+        <summary>O plano renova sozinho?</summary>
+        <p>Não. Não há cobrança automática: o acesso vale apenas pelo período pago e expira na data informada no seu perfil.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Posso trocar de plano?</summary>
+        <p>Sim. Você pode contratar outro período a qualquer momento; o novo período é somado ao tempo restante após a confirmação.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Perco meu histórico se o VIP expirar?</summary>
+        <p>Não. Histórico, favoritos e listas continuam na sua conta. Apenas os benefícios VIP deixam de valer.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Onde vejo meus pagamentos?</summary>
+        <p>Na seção "Minha assinatura" desta página e no seu perfil, com status de cada pedido.</p>
+      </details>
     </section>
   </div>
 
   <div id="tab-profile" class="tab-content" role="tabpanel" aria-label="Perfil do usuário">
     <section class="profile-section">
-      <div id="loggedOutView" class="profile-login" style="display:none;">
-        <p>Entre para salvar favoritos, histórico e listas.</p>
+
+      <div id="loggedOutView" class="profile-guest" style="display:none;">
+        <div class="guest-icon"><i class="fa-solid fa-user-astronaut" aria-hidden="true"></i></div>
+        <h2 class="section-title">Sua conta no SolitudeScan</h2>
+        <p class="section-sub">Entre para salvar favoritos, acompanhar seu histórico de leitura, criar listas e gerenciar sua assinatura.</p>
+        <ul class="guest-benefits">
+          <li><i class="fa-solid fa-bookmark" aria-hidden="true"></i> Favoritos e listas personalizadas</li>
+          <li><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Histórico e continuação de leitura</li>
+          <li><i class="fa-solid fa-crown" aria-hidden="true"></i> Assinatura VIP e capítulos antecipados</li>
+        </ul>
         <div class="auth-buttons">
-          <button type="button" class="btn-primary" onclick="fazerLogin()">Entrar</button>
-          <button type="button" class="btn-secondary" onclick="abrirCadastro()">Cadastrar</button>
+          <button type="button" class="btn-primary" onclick="fazerLogin()"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Entrar</button>
+          <button type="button" class="btn-secondary" onclick="abrirCadastro()"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Criar conta</button>
         </div>
       </div>
-      <div id="loggedInView" class="user-profile-mini" style="display:none;">
-        <img id="userAvatarImg" src="icon.svg" alt="Avatar do usuário" class="user-avatar-mini" width="36" height="36" decoding="async">
-        <div class="user-info-mini">
-          <span id="userNameDisplay" class="user-name">Leitor</span>
-          <span id="userPlanBadge" class="plan-badge">Plano Gratuito</span>
+
+      <div class="profile-shell">
+        <div class="profile-header">
+          <img id="profileAvatarLarge" src="icon.svg" alt="Avatar do usuário" class="profile-avatar-large" width="96" height="96" decoding="async">
+          <div class="profile-header-info">
+            <h2 id="profileNameLarge">Leitor</h2>
+            <p class="profile-email" id="profileEmail">—</p>
+            <div class="profile-badges">
+              <span id="profilePlanLarge" class="plan-badge">Plano Gratuito</span>
+              <span class="profile-email" id="profileMemberSince"></span>
+            </div>
+          </div>
         </div>
-        <button type="button" class="btn-icon" onclick="fazerLogout()" aria-label="Sair da conta" title="Sair">
-          <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
-        </button>
-      </div>
-      <div class="profile-header">
-        <img id="profileAvatarLarge" src="icon.svg" alt="Avatar grande" class="profile-avatar-large" width="96" height="96" decoding="async">
-        <div>
-          <h2 id="profileNameLarge">Nome do Usuário</h2>
-          <span id="profilePlanLarge" class="plan-badge">Plano Gratuito</span>
+
+        <div class="profile-stats" role="group" aria-label="Estatísticas da conta">
+          <div class="stat-card"><span class="stat-value" id="statCapitulos">0</span><span class="stat-label">Capítulos lidos</span></div>
+          <div class="stat-card"><span class="stat-value" id="statObras">0</span><span class="stat-label">Obras no histórico</span></div>
+          <div class="stat-card"><span class="stat-value" id="statFavoritos">0</span><span class="stat-label">Favoritos</span></div>
+          <div class="stat-card"><span class="stat-value" id="statListas">0</span><span class="stat-label">Listas</span></div>
+        </div>
+
+        <div class="profile-actions-grid">
+          <button type="button" class="action-card" onclick="abrirConfigPerfil()">
+            <i class="fa-solid fa-gear" aria-hidden="true"></i><span>Editar perfil</span>
+          </button>
+          <button type="button" class="action-card" onclick="switchTab('tab-vip')">
+            <i class="fa-solid fa-crown" aria-hidden="true"></i><span>Assinatura VIP</span>
+          </button>
+          <button type="button" class="action-card" onclick="exportarDadosUsuario()">
+            <i class="fa-solid fa-download" aria-hidden="true"></i><span>Exportar dados</span>
+          </button>
+          <button type="button" class="action-card" onclick="fazerLogout()">
+            <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Sair da conta</span>
+          </button>
+        </div>
+
+        <div class="profile-tabs" role="tablist" aria-label="Seções do perfil">
+          <button type="button" role="tab" aria-selected="true" class="tab-btn active" onclick="switchTabProfile('historico', this)"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Histórico</button>
+          <button type="button" role="tab" aria-selected="false" class="tab-btn" onclick="switchTabProfile('favoritos', this)"><i class="fa-solid fa-heart" aria-hidden="true"></i> Favoritos</button>
+          <button type="button" role="tab" aria-selected="false" class="tab-btn" onclick="switchTabProfile('listas', this)"><i class="fa-solid fa-list" aria-hidden="true"></i> Minhas listas</button>
+        </div>
+
+        <div id="profileHistorico" class="profile-tab-content active">
+          <div class="profile-tab-toolbar">
+            <button type="button" class="btn-secondary small" onclick="limparHistorico()"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Limpar histórico</button>
+          </div>
+          <div id="historicoContainer" class="manga-grid" role="list"></div>
+        </div>
+        <div id="profileFavoritos" class="profile-tab-content">
+          <div id="favoritosContainer" class="manga-grid" role="list"></div>
+        </div>
+        <div id="profileListas" class="profile-tab-content">
+          <div id="listasContainer" class="listas-grid" role="list"></div>
         </div>
       </div>
-      <div class="profile-actions">
-        <button type="button" class="btn-secondary" onclick="abrirConfigPerfil()"><i class="fa-solid fa-gear" aria-hidden="true"></i> Editar Perfil</button>
-        <button type="button" class="btn-secondary" onclick="exportarDadosUsuario()"><i class="fa-solid fa-download" aria-hidden="true"></i> Exportar Meus Dados</button>
-      </div>
-      <div class="profile-tabs" role="tablist" aria-label="Seções do perfil">
-        <button type="button" role="tab" aria-selected="true" class="tab-btn active" onclick="switchTabProfile('historico', this)">Histórico</button>
-        <button type="button" role="tab" aria-selected="false" class="tab-btn" onclick="switchTabProfile('favoritos', this)">Favoritos</button>
-        <button type="button" role="tab" aria-selected="false" class="tab-btn" onclick="switchTabProfile('listas', this)">Minhas Listas</button>
-      </div>
-      <div id="profileHistorico" class="profile-tab-content active">
-        <div class="profile-tab-toolbar">
-          <button type="button" class="btn-secondary small" onclick="limparHistorico()"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Limpar histórico</button>
-        </div>
-        <div id="historicoContainer" class="manga-grid" role="list"></div>
-      </div>
-      <div id="profileFavoritos" class="profile-tab-content"><div id="favoritosContainer" class="manga-grid" role="list"></div></div>
-      <div id="profileListas" class="profile-tab-content"><div id="listasContainer" class="listas-grid" role="list"></div></div>
     </section>
   </div>
 </main>
@@ -227,26 +420,43 @@
   <div class="footer-content">
     <div class="footer-brand">
       <span class="logo-text">Solitude<span class="highlight">Scan</span></span>
-      <p>Leitura profissional de manhwas, mangás e manhuás.</p>
+      <p>Leitura de manhwas, mangás e manhuás com organização profissional.</p>
+      <div class="footer-social">
+        <a href="https://discord.gg/fX3wUZBvk" target="_blank" rel="noopener noreferrer" aria-label="Discord (abre em nova aba)"><i class="fa-brands fa-discord" aria-hidden="true"></i></a>
+      </div>
     </div>
-    <div class="footer-links">
+    <div class="footer-col">
+      <h4>Explorar</h4>
+      <a href="#" onclick="switchTab('tab-home'); return false;">Início</a>
+      <a href="#" onclick="focarCatalogo(); return false;">Catálogo</a>
+      <a href="#" onclick="switchTab('tab-vip'); return false;">Planos VIP</a>
+      <a href="#" onclick="switchTab('tab-profile'); return false;">Meu perfil</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
       <a href="/termos">Termos de Uso</a>
       <a href="/privacidade">Política de Privacidade</a>
+      <a href="/privacidade#cookies">Cookies</a>
+      <a href="/termos#reembolso">Reembolso</a>
+    </div>
+    <div class="footer-col">
+      <h4>Suporte</h4>
       <a href="/contato">Contato</a>
       <a href="/denuncia">Canal de Denúncia</a>
-    </div>
-    <div class="footer-social">
-      <a href="https://discord.gg/fX3wUZBvk" target="_blank" rel="noopener noreferrer" aria-label="Discord (abre em nova aba)"><i class="fa-brands fa-discord" aria-hidden="true"></i></a>
+      <a href="/termos#dmca">Direitos autorais</a>
     </div>
   </div>
-  <div class="footer-bottom"><p>&copy; 2026 SolitudeScan. Todos os direitos reservados.</p></div>
+  <div class="footer-bottom">
+    <p>&copy; 2026 SolitudeScan. Todos os direitos reservados.</p>
+    <p>As obras são publicadas por seus respectivos autores e tradutores. SolitudeScan não reivindica direitos sobre elas.</p>
+  </div>
 </footer>
 
 <nav class="bottom-nav" aria-label="Menu principal">
-  <button type="button" class="bottom-item nav-item active" data-tab="tab-home" onclick="switchTab('tab-home', this)"><i class="fa-solid fa-house" aria-hidden="true"></i><span>Início</span></button>
-  <button type="button" class="bottom-item nav-item" data-tab="tab-vip" onclick="switchTab('tab-vip', this)"><i class="fa-solid fa-crown" aria-hidden="true"></i><span>VIP</span></button>
-  <button type="button" class="bottom-item nav-item" data-tab="tab-profile" onclick="switchTab('tab-profile', this)"><i class="fa-solid fa-user" aria-hidden="true"></i><span>Perfil</span></button>
-  <button type="button" id="btnAdminNav" class="bottom-item" style="display:none;" aria-label="Painel administrativo"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span>Admin</span></button>
+  <button type="button" class="nav-item active" data-tab="tab-home" onclick="switchTab('tab-home', this)"><i class="fa-solid fa-house" aria-hidden="true"></i><span>Início</span></button>
+  <button type="button" class="nav-item" data-tab="tab-vip" onclick="switchTab('tab-vip', this)"><i class="fa-solid fa-crown" aria-hidden="true"></i><span>VIP</span></button>
+  <button type="button" class="nav-item" data-tab="tab-profile" onclick="switchTab('tab-profile', this)"><i class="fa-solid fa-user" aria-hidden="true"></i><span>Perfil</span></button>
+  <button type="button" id="btnAdminNav" class="nav-item" style="display:none;" onclick="abrirPainelAdmin()" aria-label="Painel administrativo"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span>Admin</span></button>
 </nav>
 
 <div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
