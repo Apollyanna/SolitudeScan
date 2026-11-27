@@ -235,6 +235,7 @@ function switchTab(tabId, el) {
   const footer = document.getElementById('siteFooter');
   if (footer) footer.style.display = tabId === 'tab-home' ? 'flex' : 'none';
   if (tabId === 'tab-profile') renderizarAbasPerfil();
+  if (tabId === 'tab-vip') renderizarMinhaAssinatura();
   window.scrollTo({ top: 0 });
 }
 
@@ -547,9 +548,107 @@ async function carregarPerfilRemoto(userId) {
   }
 }
 
+/* ==========================================================================
+   Reformulação: gêneros, estatísticas reais, status da assinatura e foco
+   ========================================================================== */
+
+function renderizarGeneros() {
+  const grid = document.getElementById('generosGrid');
+  if (!grid) return;
+  const contagem = new Map();
+  (AppState.catalogo.obrasRemotas || []).forEach(obra => {
+    if (obra.adulto && !AppState.usuario.isAdmin) return;
+    (obra.generos || []).forEach(genero => contagem.set(genero, (contagem.get(genero) || 0) + 1));
+  });
+  const lista = [...contagem.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'))
+    .slice(0, 12);
+  if (!lista.length) {
+    grid.innerHTML = '<div class="empty-state"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><p>Os gêneros aparecem aqui assim que houver obras publicadas.</p></div>';
+    return;
+  }
+  grid.innerHTML = lista.map(([nome, total]) => {
+    const rotulo = escaparHtml(nome);
+    return '<button type="button" class="genero-tile" role="listitem" data-genero="' + rotulo + '" onclick="filtrarPorGenero(this.dataset.genero)">' +
+      '<span>' + rotulo + '</span>' +
+      '<small>' + total + (total === 1 ? ' obra' : ' obras') + '</small>' +
+      '</button>';
+  }).join('');
+}
+
+function filtrarPorGenero(genero) {
+  const select = document.getElementById('generoFiltro');
+  if (!select) return;
+  select.value = genero;
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+  focarCatalogo();
+}
+
+function focarCatalogo() {
+  const home = document.getElementById('tab-home');
+  if (home && !home.classList.contains('active')) switchTab('tab-home');
+  const grid = document.getElementById('mangaContainer');
+  if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const select = document.getElementById('generoFiltro');
+  if (select) setTimeout(() => select.focus({ preventScroll: true }), 350);
+}
+
+function atualizarEstatisticasPerfil() {
+  const u = AppState.usuario;
+  const historico = Array.isArray(u.historico) ? u.historico : [];
+  const favoritos = Array.isArray(u.favoritos) ? u.favoritos : [];
+  const listas = Array.isArray(AppState.listas && AppState.listas.personalizadas) ? AppState.listas.personalizadas : [];
+  const registros = historico.reduce((total, item) => total + (Number(item.capitulo) > 0 ? 1 : 0), 0);
+  const definir = (id, valor) => { const el = document.getElementById(id); if (el) el.textContent = formatarNumero(valor); };
+  definir('statObras', historico.length);
+  definir('statFavoritos', favoritos.length);
+  definir('statListas', listas.length);
+  definir('statCapitulos', registros);
+
+  const email = document.getElementById('profileEmail');
+  if (email) email.textContent = u.email || 'E-mail não informado';
+
+  const desde = document.getElementById('profileMemberSince');
+  if (desde) {
+    const criado = u.criadoEm || localStorage.getItem('solitude_criado_em');
+    desde.textContent = criado ? 'Na plataforma desde ' + new Date(criado).toLocaleDateString('pt-BR') : '';
+  }
+}
+
+function renderizarMinhaAssinatura() {
+  const box = document.getElementById('minhaAssinaturaContainer');
+  if (!box) return;
+  const u = AppState.usuario;
+  if (!u.logado) {
+    box.innerHTML = '<p class="empty-hint">Entre na sua conta para ver o status da assinatura.</p>' +
+      '<button type="button" class="btn-secondary" onclick="fazerLogin()"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Entrar</button>';
+    return;
+  }
+  const dias = calcularDiasRestantes();
+  const ativo = u.isVip && dias > 0;
+  const plano = u.isAdmin ? 'Administrador' : (u.planoVip || (ativo ? 'VIP' : 'Plano Gratuito'));
+  const status = u.isAdmin ? 'Acesso administrativo' : (ativo ? 'Ativo' : (u.isVip ? 'Expirado' : 'Gratuito'));
+  const validoAte = ativo && u.vipExpiraEm
+    ? new Date(u.vipExpiraEm).toLocaleDateString('pt-BR') + ' (' + dias + (dias === 1 ? ' dia' : ' dias') + ')'
+    : '—';
+  const linha = (rotulo, valor) => '<div class="payment-row"><span class="p-plan">' + rotulo + '</span><span class="p-value">' + escaparHtml(String(valor)) + '</span></div>';
+  box.innerHTML = '<div class="sub-info">' +
+    linha('Plano atual', plano) +
+    linha('Status', status) +
+    linha('Válido até', validoAte) +
+    '</div>' +
+    (ativo
+      ? '<p class="empty-hint">Não há cobrança automática: o acesso termina na data acima.</p>'
+      : '<button type="button" class="btn-primary" onclick="document.getElementById(\'tituloPlanos\').scrollIntoView({behavior:\'smooth\',block:\'start\'})"><i class="fa-solid fa-crown" aria-hidden="true"></i> Escolher um plano</button>');
+}
+
 function atualizarVisibilidadeAdmin() {
-  const btn = document.getElementById('btnAdminNav');
-  if (btn) btn.style.display = AppState.usuario.logado && AppState.usuario.isAdmin ? 'flex' : 'none';
+  const logadoAdmin = AppState.usuario.logado && AppState.usuario.isAdmin;
+  ['btnAdminNav', 'btnAdminNavDesktop'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.style.display = logadoAdmin ? 'flex' : 'none';
+  });
 }
 
 function ativarFallbackImagens() {
@@ -632,6 +731,7 @@ function atualizarPerfilTela() {
       box.remove();
     }
   }
+  atualizarEstatisticasPerfil();
   renderizarAbasPerfil();
 }
 
@@ -833,6 +933,7 @@ async function carregarObras() {
     renderizarHeroBanner();
     renderizarTendencias();
     renderizarRanking();
+    renderizarGeneros();
     renderizarContinueLendo();
   } catch (err) {
     console.error('[SolitudeScan] Erro ao carregar obras:', err);
