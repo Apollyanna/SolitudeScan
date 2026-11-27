@@ -2554,3 +2554,30 @@ ins.adsbygoogle,
     padding: 20px 14px 56px;
   }
 }
+
+/* Botao de remover obra dentro do modal de lista */
+.lista-obra-wrap {
+  position: relative;
+}
+
+.lista-obra-remover {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lista-obra-remover:hover,
+.lista-obra-remover:focus-visible {
+  background: var(--danger, #e5484d);
+  border-color: transparent;
+}
