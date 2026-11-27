@@ -1,9 +1,11 @@
-const CACHE = 'solitude-v7';
+const CACHE = 'solitude-v8';
 const CORE = [
   '/',
   '/index.html',
   '/style.css',
   '/script.js',
+  '/pesquisa.css',
+  '/pesquisa.js',
   '/vendor/supabase-js-2.45.4.min.js',
   '/manifest.webmanifest',
   '/icon.svg',

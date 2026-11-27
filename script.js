@@ -576,22 +576,7 @@ function renderizarGeneros() {
   }).join('');
 }
 
-function filtrarPorGenero(genero) {
-  const select = document.getElementById('generoFiltro');
-  if (!select) return;
-  select.value = genero;
-  select.dispatchEvent(new Event('change', { bubbles: true }));
-  focarCatalogo();
-}
 
-function focarCatalogo() {
-  const home = document.getElementById('tab-home');
-  if (home && !home.classList.contains('active')) switchTab('tab-home');
-  const grid = document.getElementById('mangaContainer');
-  if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  const select = document.getElementById('generoFiltro');
-  if (select) setTimeout(() => select.focus({ preventScroll: true }), 350);
-}
 
 function atualizarEstatisticasPerfil() {
   const u = AppState.usuario;
@@ -892,54 +877,6 @@ function solicitarExclusaoConta() {
   );
 }
 
-async function carregarObras() {
-  if (!AppState.supabase) {
-    mostrarToast('Sistema offline. Algumas funcionalidades podem estar limitadas.', 'alerta', 5000);
-    renderizarCatalogo();
-    return;
-  }
-  try {
-    const { data, error } = await AppState.supabase
-      .from('works')
-      .select('*, genres:work_genres(genres(name)), chapters(count)')
-      .order('updated_at', { ascending: false });
-    if (error) throw error;
-
-    AppState.catalogo.obrasRemotas = (data || []).map(obra => ({
-      id: obra.id,
-      titulo: obra.title || 'Sem título',
-      capa: obra.cover_url || PLACEHOLDERS.CAPA_PLACEHOLDER,
-      autor: obra.author || 'Desconhecido',
-      artista: obra.artist || obra.author || 'Desconhecido',
-      status: obra.status || 'Em Lançamento',
-      generos: (obra.genres || []).map(g => g.genres?.name || g.name).filter(Boolean),
-      sinopse: obra.synopsis || 'Sinopse não disponível.',
-      tipo: obra.type || 'Manhwa',
-      visualizacoes: Number(obra.views) || 0,
-      curtidas: Number(obra.likes_count) || 0,
-      avaliacao: Number(obra.rating_avg ?? obra.rating) || 0,
-      totalAvaliacoes: Number(obra.rating_count) || 0,
-      totalCapitulos: obra.chapters?.[0]?.count || 0,
-      atualizadoEm: obra.updated_at,
-      criadoEm: obra.created_at,
-      exclusivo: !!obra.is_vip,
-      adulto: !!obra.is_adult,
-      destaque: !!obra.is_featured
-    }));
-
-    aplicarOverridesLocais();
-    popularFiltroGeneros();
-    renderizarCatalogo();
-    renderizarHeroBanner();
-    renderizarTendencias();
-    renderizarRanking();
-    renderizarGeneros();
-    renderizarContinueLendo();
-  } catch (err) {
-    console.error('[SolitudeScan] Erro ao carregar obras:', err);
-    mostrarToast('Falha ao carregar o catálogo. Tente recarregar a página.', 'erro', 6000);
-  }
-}
 
 function aplicarOverridesLocais() {
   const removidas = lerLocal('solitude_obras_removidas', []);
@@ -948,57 +885,7 @@ function aplicarOverridesLocais() {
   }
 }
 
-function popularFiltroGeneros() {
-  const select = document.getElementById('generoFiltro');
-  if (!select) return;
-  const generos = new Set();
-  AppState.catalogo.obrasRemotas.forEach(o => (o.generos || []).forEach(g => generos.add(g)));
-  select.innerHTML = '<option value="Todos">Todos os Gêneros</option>';
-  [...generos].sort((a, b) => a.localeCompare(b, 'pt-BR')).forEach(g => {
-    const opt = document.createElement('option');
-    opt.value = g;
-    opt.textContent = g;
-    select.appendChild(opt);
-  });
-  select.value = generos.has(AppState.catalogo.generoAtual) ? AppState.catalogo.generoAtual : 'Todos';
-}
 
-function renderizarCatalogo() {
-  const container = document.getElementById('mangaContainer');
-  if (!container) return;
-  const c = AppState.catalogo;
-  let obras = [...c.obrasRemotas];
-
-  if (c.generoAtual !== 'Todos') obras = obras.filter(o => (o.generos || []).includes(c.generoAtual));
-  if (c.statusFiltro !== 'Todos') obras = obras.filter(o => o.status === c.statusFiltro);
-  if (!AppState.usuario.isAdmin) obras = obras.filter(o => !o.adulto);
-  if (c.termoBusca) {
-    const termo = c.termoBusca.toLowerCase();
-    obras = obras.filter(o =>
-      o.titulo.toLowerCase().includes(termo) ||
-      o.autor.toLowerCase().includes(termo) ||
-      (o.artista || '').toLowerCase().includes(termo) ||
-      (o.sinopse || '').toLowerCase().includes(termo)
-    );
-  }
-
-  switch (c.ordemFiltro) {
-    case 'populares': obras.sort((a, b) => b.visualizacoes - a.visualizacoes); break;
-    case 'avaliados': obras.sort((a, b) => b.avaliacao - a.avaliacao); break;
-    case 'titulo': obras.sort((a, b) => a.titulo.localeCompare(b.titulo, 'pt-BR')); break;
-    case 'capitulos': obras.sort((a, b) => b.totalCapitulos - a.totalCapitulos); break;
-    default: obras.sort((a, b) => new Date(b.atualizadoEm || 0) - new Date(a.atualizadoEm || 0));
-  }
-
-  if (!obras.length) {
-    const temFiltro = c.generoAtual !== 'Todos' || c.statusFiltro !== 'Todos' || !!c.termoBusca;
-    container.innerHTML = temFiltro
-      ? '<div class="empty-state"><i class="fa-solid fa-book-open" aria-hidden="true"></i><p>Nenhuma obra encontrada com os filtros aplicados.</p><button type="button" class="btn-secondary" onclick="limparFiltros()">Limpar Filtros</button></div>'
-      : '<div class="empty-state"><i class="fa-solid fa-book-open" aria-hidden="true"></i><p>O acervo ainda está sendo publicado. Volte em breve.</p></div>';
-    return;
-  }
-  container.innerHTML = obras.map(criarCardObra).join('');
-}
 
 function criarCardObra(obra) {
   const generos = (obra.generos || []).slice(0, 2).map(g => '<span class="genre-tag">' + escaparHtml(g) + '</span>').join('');
@@ -1027,41 +914,7 @@ function criarCardObra(obra) {
     </article>`;
 }
 
-function limparFiltros() {
-  Object.assign(AppState.catalogo, { generoAtual: 'Todos', statusFiltro: 'Todos', termoBusca: '', ordemFiltro: 'recentes' });
-  const valores = { generoFiltro: 'Todos', statusFiltro: 'Todos', ordemFiltro: 'recentes', searchInput: '' };
-  Object.entries(valores).forEach(([id, valor]) => {
-    const el = document.getElementById(id);
-    if (el) el.value = valor;
-  });
-  renderizarCatalogo();
-  mostrarToast('Filtros limpos.', 'info', 2000);
-}
 
-function inicializarBusca() {
-  const input = document.getElementById('searchInput');
-  if (input) {
-    const buscar = debounce(valor => {
-      AppState.catalogo.termoBusca = valor;
-      renderizarCatalogo();
-    }, 300);
-    input.addEventListener('input', e => buscar(e.target.value.trim()));
-    input.addEventListener('keydown', e => {
-      if (e.key !== 'Escape') return;
-      input.value = '';
-      AppState.catalogo.termoBusca = '';
-      renderizarCatalogo();
-      input.blur();
-    });
-  }
-  [['generoFiltro', 'generoAtual'], ['statusFiltro', 'statusFiltro'], ['ordemFiltro', 'ordemFiltro']].forEach(([id, chave]) => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('change', e => {
-      AppState.catalogo[chave] = e.target.value;
-      renderizarCatalogo();
-    });
-  });
-}
 
 function renderizarHeroBanner() {
   const track = document.getElementById('heroTrack');
